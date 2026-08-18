@@ -1,0 +1,274 @@
+import { apiClient } from './client';
+import type { ApiResponse } from '../../types/api.types';
+
+// ── Types ──────────────────────────────────────────────────────────────────
+
+export interface AdminOverview {
+  totalUsers: number;
+  totalProviders: number;
+  totalVehicles: number;
+  pendingProviders: number;
+  pendingVehicles: number;
+  activeBookings: number;
+}
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  role: string;
+  status: string;
+  emailVerified: boolean;
+  createdAt: string;
+  providerProfile?: { businessName: string; verificationStatus: string } | null;
+}
+
+export interface AdminUserDetail {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  role: string;
+  status: string;
+  emailVerified: boolean;
+  createdAt: string;
+  updatedAt: string;
+  _count: { bookingRequests: number; savedVehicles: number };
+  providerProfile: {
+    id: string;
+    businessName: string;
+    businessDescription?: string | null;
+    verificationStatus: string;
+    rejectionReason?: string | null;
+    isFeatured: boolean;
+    createdAt: string;
+    updatedAt: string;
+    showrooms: Array<{ id: string; name: string; city: string; contactNumber?: string | null }>;
+    documents: Array<{ id: string; documentType: string; fileUrl: string; status: string }>;
+    _count: { vehicles: number; bookingRequests: number };
+  } | null;
+}
+
+export interface AdminProviderSummary {
+  id: string;
+  businessName: string;
+  businessType: string;
+  verificationStatus: string;
+  updatedAt: string;
+  user: { id: string; name: string; email: string; phone?: string | null; createdAt: string };
+  showrooms: Array<{ city: string; contactNumber?: string | null }>;
+  documents: Array<{ id: string; documentType: string; fileUrl: string; status: string }>;
+  _count: { vehicles: number };
+}
+
+export interface AdminVehicleSummary {
+  id: string;
+  title: string;
+  make: string;
+  model: string;
+  year: number;
+  status: string;
+  pricePerDay: string | number;
+  rejectionReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  providerProfile: { id: string; businessName: string; verificationStatus?: string };
+  showroom?: { city: string } | null;
+  images: Array<{ url: string; altText?: string | null }>;
+}
+
+export interface AdminVehicleDetail {
+  id: string;
+  slug: string;
+  title: string;
+  make: string;
+  model: string;
+  year: number;
+  transmission: string;
+  fuelType: string;
+  seatingCapacity: number;
+  engineType?: string | null;
+  pricePerDay: string | number;
+  pricePerWeek?: string | number | null;
+  locationText?: string | null;
+  availabilityNotes?: string | null;
+  pricingNotes?: string | null;
+  specialConditions?: string | null;
+  status: string;
+  rejectionReason?: string | null;
+  viewCount: number;
+  inquiryCount: number;
+  createdAt: string;
+  updatedAt: string;
+  images: Array<{ id: string; url: string; altText?: string | null; sortOrder: number; width?: number | null; height?: number | null }>;
+  features: Array<{ id: string; name: string; value?: string | null }>;
+  showroom: { id: string; name: string; city: string; area?: string | null; contactNumber: string } | null;
+  providerProfile: {
+    id: string;
+    businessName: string;
+    slug: string;
+    verificationStatus: string;
+    user: { id: string; name: string; email: string; phone?: string | null; createdAt: string };
+  };
+  _count: { bookingRequests: number };
+}
+
+export interface AdminTripDetail {
+  id: string;
+  originCity: string;
+  destinationCity: string;
+  pickupPoint: string;
+  dropoffPoint?: string | null;
+  departureAt: string;
+  availableSeats: number;
+  pricePerSeat: string | number;
+  contactNumber: string;
+  notes?: string | null;
+  status: string;
+  rejectionReason?: string | null;
+  cancelReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  postedBy: { id: string; name: string; email: string; phone?: string | null };
+  userVehicle: { id: string; make: string; model: string; year?: number | null; color?: string | null; plateNumber: string; status: string };
+}
+
+export interface AdminUserVehicle {
+  id: string;
+  make: string;
+  model: string;
+  year?: number | null;
+  color?: string | null;
+  plateNumber: string;
+  status: string;
+  rejectionReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  owner: { id: string; name: string; email: string; phone?: string | null };
+  // Only present on the single-vehicle detail fetch, not on list rows
+  documents?: Array<{ id: string; documentType: string; fileUrl: string; status: string }>;
+}
+
+export interface AuditLog {
+  id: string;
+  actionType: string;
+  entityType: string;
+  entityId: string;
+  metadata?: Record<string, unknown> | null;
+  ipAddress?: string | null;
+  createdAt: string;
+  adminUser: { id: string; name: string; email: string; role: string };
+}
+
+export interface PlatformSetting {
+  id: string;
+  key: string;
+  value: unknown;
+  description?: string | null;
+  updatedAt: string;
+  updatedById?: string | null;
+}
+
+export interface PagedResponse<T> {
+  data: T[];
+  meta: { total: number; page: number; limit: number; totalPages: number };
+}
+
+// ── API client ─────────────────────────────────────────────────────────────
+
+export const adminApi = {
+  getOverview: () =>
+    apiClient.get<ApiResponse<AdminOverview>>('/admin/overview').then((r) => r.data.data),
+
+  // Providers
+  getPendingProviders: (page = 1, limit = 20) =>
+    apiClient
+      .get<PagedResponse<AdminProviderSummary>>('/admin/providers/pending', { params: { page, limit } })
+      .then((r) => r.data),
+  getProviderDetail: (id: string) =>
+    apiClient.get<ApiResponse<AdminProviderSummary>>(`/admin/providers/${id}`).then((r) => r.data.data),
+  approveProvider: (id: string, note?: string) =>
+    apiClient.patch<ApiResponse<AdminProviderSummary>>(`/admin/providers/${id}/approve`, { note }).then((r) => r.data.data),
+  rejectProvider: (id: string, reason: string) =>
+    apiClient.patch<ApiResponse<AdminProviderSummary>>(`/admin/providers/${id}/reject`, { reason }).then((r) => r.data.data),
+
+  // Vehicles
+  getAllVehicles: (page = 1, limit = 20, status?: string, search?: string) =>
+    apiClient
+      .get<PagedResponse<AdminVehicleSummary>>('/admin/vehicles', {
+        params: { page, limit, ...(status && { status }), ...(search && { search }) },
+      })
+      .then((r) => r.data),
+  getPendingVehicles: (page = 1, limit = 20) =>
+    apiClient
+      .get<PagedResponse<AdminVehicleSummary>>('/admin/vehicles/pending', { params: { page, limit } })
+      .then((r) => r.data),
+  getVehicleDetail: (id: string) =>
+    apiClient.get<ApiResponse<AdminVehicleDetail>>(`/admin/vehicles/${id}`).then((r) => r.data.data),
+  approveVehicle: (id: string, note?: string) =>
+    apiClient.patch<ApiResponse<AdminVehicleSummary>>(`/admin/vehicles/${id}/approve`, { note }).then((r) => r.data.data),
+  rejectVehicle: (id: string, reason: string) =>
+    apiClient.patch<ApiResponse<AdminVehicleSummary>>(`/admin/vehicles/${id}/reject`, { reason }).then((r) => r.data.data),
+
+  // Users
+  getUsers: (page = 1, limit = 20, role?: string, status?: string) =>
+    apiClient
+      .get<PagedResponse<AdminUser>>('/admin/users', { params: { page, limit, role, status } })
+      .then((r) => r.data),
+  getUserDetail: (id: string) =>
+    apiClient.get<ApiResponse<AdminUserDetail>>(`/admin/users/${id}`).then((r) => r.data.data),
+  suspendUser: (id: string, reason: string) =>
+    apiClient
+      .patch<ApiResponse<{ id: string; name: string; email: string; status: string }>>(`/admin/users/${id}/suspend`, { reason })
+      .then((r) => r.data.data),
+  activateUser: (id: string) =>
+    apiClient
+      .patch<ApiResponse<{ id: string; name: string; email: string; status: string }>>(`/admin/users/${id}/activate`)
+      .then((r) => r.data.data),
+
+  // Trips
+  getTrips: (page = 1, limit = 20, status?: string) =>
+    apiClient
+      .get<PagedResponse<AdminTripDetail>>('/admin/trips', { params: { page, limit, ...(status && { status }) } })
+      .then((r) => r.data),
+  getTripDetail: (id: string) =>
+    apiClient.get<ApiResponse<AdminTripDetail>>(`/admin/trips/${id}`).then((r) => r.data.data),
+  suspendTrip: (id: string) =>
+    apiClient.patch<ApiResponse<AdminTripDetail>>(`/admin/trips/${id}/suspend`).then((r) => r.data.data),
+  reactivateTrip: (id: string) =>
+    apiClient.patch<ApiResponse<AdminTripDetail>>(`/admin/trips/${id}/reactivate`).then((r) => r.data.data),
+
+  // User vehicles (personal vehicles used for trips)
+  getUserVehicles: (page = 1, limit = 20, status?: string) =>
+    apiClient
+      .get<PagedResponse<AdminUserVehicle>>('/admin/user-vehicles', { params: { page, limit, ...(status && { status }) } })
+      .then((r) => r.data),
+  getUserVehicleDetail: (id: string) =>
+    apiClient.get<ApiResponse<AdminUserVehicle>>(`/admin/user-vehicles/${id}`).then((r) => r.data.data),
+  approveUserVehicle: (id: string) =>
+    apiClient.patch<ApiResponse<AdminUserVehicle>>(`/admin/user-vehicles/${id}/approve`).then((r) => r.data.data),
+  rejectUserVehicle: (id: string, reason: string) =>
+    apiClient.patch<ApiResponse<AdminUserVehicle>>(`/admin/user-vehicles/${id}/reject`, { reason }).then((r) => r.data.data),
+  suspendUserVehicle: (id: string) =>
+    apiClient.patch<ApiResponse<AdminUserVehicle>>(`/admin/user-vehicles/${id}/suspend`).then((r) => r.data.data),
+  reactivateUserVehicle: (id: string) =>
+    apiClient.patch<ApiResponse<AdminUserVehicle>>(`/admin/user-vehicles/${id}/reactivate`).then((r) => r.data.data),
+
+  // Audit logs
+  getAuditLogs: (params: {
+    entityType?: string;
+    entityId?: string;
+    adminUserId?: string;
+    page?: number;
+    limit?: number;
+  }) => apiClient.get<PagedResponse<AuditLog>>('/admin/audit-logs', { params }).then((r) => r.data),
+
+  // Settings
+  getSettings: () =>
+    apiClient.get<ApiResponse<PlatformSetting[]>>('/admin/settings').then((r) => r.data.data),
+  upsertSetting: (key: string, value: unknown, description?: string) =>
+    apiClient
+      .patch<ApiResponse<PlatformSetting>>(`/admin/settings/${key}`, { value, description })
+      .then((r) => r.data.data),
+};

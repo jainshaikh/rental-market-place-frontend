@@ -1,0 +1,129 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { MessageSquareOff } from 'lucide-react';
+import { useMyTripInquiries, useUpdateTripInquiryStatus } from '../../hooks/useTripInquiries';
+import type { TripInquiry } from '../../lib/api/trip-inquiries.api';
+import { Card, ConfirmDialog, EmptyState, Pagination } from '../ui';
+import { StatusBadge } from '../common/StatusBadge';
+import { cn } from '../../lib/utils/cn';
+
+function titleCase(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+const STATUS_LABEL: Partial<Record<TripInquiry['status'], string>> = {
+  PENDING: 'Awaiting response',
+  REJECTED: 'Not accepted',
+};
+
+interface MyTripInquiriesListProps {
+  tripDetailBasePath: string; // e.g. '/trips' (public detail page — same for both roles)
+}
+
+// Rider's own sent trip requests. Shared between the customer (dashboard) and
+// provider portal, mirroring how MyTripDetail/MyTripsList are shared — a trip
+// poster can be either an ordinary USER or a PROVIDER, and either can also be
+// a rider requesting a seat on someone else's trip.
+export function MyTripInquiriesList({ tripDetailBasePath }: MyTripInquiriesListProps) {
+  const router = useRouter();
+  const [page, setPage] = useState(1);
+  const [cancelId, setCancelId] = useState<string | null>(null);
+  const { data, isFetching } = useMyTripInquiries(page);
+  const updateStatus = useUpdateTripInquiryStatus();
+
+  const inquiries = data?.data ?? [];
+  const meta = data?.meta;
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-ink">My Trip Requests</h1>
+        <p className="mt-1 text-sm text-text-muted">Track the seat requests you've sent to drivers.</p>
+      </div>
+
+      {isFetching && inquiries.length === 0 ? (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-20 animate-pulse rounded-card border border-border-subtle bg-surface" />
+          ))}
+        </div>
+      ) : inquiries.length === 0 ? (
+        <EmptyState
+          icon={MessageSquareOff}
+          title="No trip requests yet"
+          description="Browse trips and request a seat to get started."
+          action={{ label: 'Browse trips', onClick: () => router.push('/trips') }}
+        />
+      ) : (
+        <div className={cn('space-y-3', isFetching && 'opacity-70 transition-opacity')}>
+          {inquiries.map((inquiry) => {
+            const canCancel = inquiry.status === 'PENDING';
+            return (
+              <Card key={inquiry.id}>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <Link
+                      href={`${tripDetailBasePath}/${inquiry.trip.id}`}
+                      className="text-sm font-semibold text-ink hover:text-brand-600"
+                    >
+                      {titleCase(inquiry.trip.originCity)} → {titleCase(inquiry.trip.destinationCity)}
+                    </Link>
+                    <p className="mt-0.5 text-xs text-text-muted">
+                      {inquiry.requestedSeats} seat{inquiry.requestedSeats !== 1 ? 's' : ''} · {inquiry.trip.postedBy.name}
+                    </p>
+                  </div>
+                  <StatusBadge status={inquiry.status} label={STATUS_LABEL[inquiry.status]} />
+                </div>
+
+                <div className="mt-2 font-mono text-xs text-text-muted">
+                  {new Date(inquiry.trip.departureAt).toLocaleString('en-AE', { dateStyle: 'medium', timeStyle: 'short' })}
+                </div>
+
+                {inquiry.status === 'ACCEPTED' && (
+                  <div className="mt-2.5 rounded-control border border-status-emerald-border bg-status-emerald-bg px-3 py-2 text-xs text-status-emerald-fg">
+                    Accepted! Contact {inquiry.trip.postedBy.name} at {inquiry.trip.postedBy.phone ?? inquiry.trip.contactNumber} to
+                    confirm pickup details.
+                  </div>
+                )}
+                {inquiry.status === 'REJECTED' && inquiry.rejectionReason && (
+                  <div className="mt-2.5 rounded-control bg-page px-3 py-2 text-xs text-slate-600">{inquiry.rejectionReason}</div>
+                )}
+
+                {canCancel && (
+                  <div className="mt-3">
+                    <button
+                      onClick={() => setCancelId(inquiry.id)}
+                      className="text-xs font-medium text-text-faint transition-colors hover:text-red-600"
+                    >
+                      Cancel request
+                    </button>
+                  </div>
+                )}
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {meta && meta.totalPages > 1 && <Pagination page={page} totalPages={meta.totalPages} onPageChange={setPage} className="mt-6" />}
+
+      <ConfirmDialog
+        open={!!cancelId}
+        onOpenChange={(open) => !open && setCancelId(null)}
+        title="Cancel this request?"
+        description="The driver will no longer see this as pending. You can always send a new request."
+        confirmLabel="Yes, cancel"
+        cancelLabel="Keep it"
+        loading={updateStatus.isPending}
+        onConfirm={async () => {
+          if (!cancelId) return;
+          await updateStatus.mutateAsync({ id: cancelId, data: { newStatus: 'CANCELLED' } });
+          setCancelId(null);
+        }}
+      />
+    </div>
+  );
+}

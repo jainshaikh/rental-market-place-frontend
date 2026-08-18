@@ -1,0 +1,182 @@
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { ArrowRight, BadgeCheck, ChevronRight } from 'lucide-react';
+import { fetchTripById } from '../../../../lib/api/server';
+import { Button, Card, WhatsAppButton } from '../../../../components/ui';
+
+interface PageProps {
+  params: { id: string };
+}
+
+function titleCase(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const res = await fetchTripById(params.id);
+  if (!res?.data) return { title: 'Trip Not Found — Rental Marketplace' };
+
+  const t = res.data;
+  return {
+    title: `${titleCase(t.originCity)} → ${titleCase(t.destinationCity)} — Rental Marketplace`,
+    description: `Trip from ${titleCase(t.originCity)} to ${titleCase(t.destinationCity)} on ${new Date(t.departureAt).toLocaleDateString()}. PKR ${Number(t.pricePerSeat).toLocaleString()} per seat.`,
+  };
+}
+
+export default async function TripDetailPage({ params }: PageProps) {
+  const res = await fetchTripById(params.id);
+  if (!res?.data) notFound();
+
+  const trip = res.data;
+  const departure = new Date(trip.departureAt);
+  const price = Number(trip.pricePerSeat).toLocaleString();
+
+  const whatsappMessage = `Hi, I'm interested in your trip from ${titleCase(trip.originCity)} to ${titleCase(trip.destinationCity)} on ${departure.toLocaleString('en-AE', { dateStyle: 'medium', timeStyle: 'short' })}. Is a seat still available?`;
+
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Breadcrumb */}
+      <nav className="mb-4 flex items-center gap-2 text-xs text-text-muted">
+        <Link href="/trips" className="hover:text-slate-700">
+          Trips
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-border-strong" />
+        <span className="truncate font-semibold text-ink">
+          {titleCase(trip.originCity)} → {titleCase(trip.destinationCity)}
+        </span>
+      </nav>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left column */}
+        <div className="space-y-6 lg:col-span-2">
+          {/* Route + time */}
+          <div>
+            <div className="flex items-center gap-2.5 text-2xl font-bold tracking-tight text-ink">
+              <span>{titleCase(trip.originCity)}</span>
+              <ArrowRight className="h-5 w-5 text-brand-600" />
+              <span>{titleCase(trip.destinationCity)}</span>
+            </div>
+            <p className="mt-2 font-mono text-sm text-text-muted">
+              Departs{' '}
+              {departure.toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              {' at '}
+              {departure.toLocaleTimeString('en-AE', { hour: 'numeric', minute: '2-digit' })}
+            </p>
+          </div>
+
+          {/* Vehicle photos */}
+          {trip.userVehicle.images.length > 0 && (
+            <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {trip.userVehicle.images.map((image, index) => (
+                <div
+                  key={image.url}
+                  className={`relative aspect-video overflow-hidden rounded-media border border-border-subtle ${index === 0 ? 'col-span-2 aspect-[16/9] sm:col-span-3' : ''}`}
+                >
+                  <Image
+                    src={image.url}
+                    alt={image.altText ?? `${trip.userVehicle.make} ${trip.userVehicle.model}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 700px"
+                    priority={index === 0}
+                  />
+                </div>
+              ))}
+            </section>
+          )}
+
+          {/* Pickup / dropoff */}
+          <Card className="space-y-4">
+            <h2 className="text-base font-semibold text-ink">Pickup &amp; drop-off</h2>
+            <div>
+              <p className="text-xs font-medium text-text-faint">Pickup point</p>
+              <p className="mt-0.5 text-sm text-slate-700">{trip.pickupPoint}</p>
+            </div>
+            {trip.dropoffPoint && (
+              <div>
+                <p className="text-xs font-medium text-text-faint">Drop-off point</p>
+                <p className="mt-0.5 text-sm text-slate-700">{trip.dropoffPoint}</p>
+              </div>
+            )}
+          </Card>
+
+          {/* Vehicle info */}
+          <Card>
+            <h2 className="mb-3 text-base font-semibold text-ink">Vehicle</h2>
+            <p className="font-medium text-ink">
+              {trip.userVehicle.make} {trip.userVehicle.model}
+              {trip.userVehicle.year ? ` (${trip.userVehicle.year})` : ''}
+            </p>
+            {trip.userVehicle.color && <p className="mt-1 text-sm text-text-muted">{trip.userVehicle.color}</p>}
+          </Card>
+
+          {trip.notes && (
+            <Card>
+              <h2 className="mb-2 text-base font-semibold text-ink">Notes from the driver</h2>
+              <p className="text-sm text-text-muted">{trip.notes}</p>
+            </Card>
+          )}
+
+          {/* Poster */}
+          <Card>
+            <h2 className="mb-3 text-base font-semibold text-ink">Posted by</h2>
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-control bg-status-blue-bg text-[15px] font-semibold text-brand-600">
+                {trip.postedBy.name[0]}
+              </div>
+              <div>
+                <p className="font-semibold text-ink">{trip.postedBy.name}</p>
+                <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                  <BadgeCheck className="h-3.5 w-3.5" />
+                  Identity &amp; documents verified
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Right column — contact card */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-24 space-y-3.5">
+            <Card padding="lg" className="shadow-md">
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-mono text-[26px] font-semibold tracking-tight text-ink">PKR {price}</span>
+                <span className="text-[13px] text-text-muted">/seat</span>
+              </div>
+              <p className="mt-1 text-[13px] text-text-muted">
+                {trip.availableSeats} seat{trip.availableSeats !== 1 ? 's' : ''} available
+              </p>
+
+              <div className="mt-5 space-y-2.5">
+                {trip.availableSeats > 0 ? (
+                  <Link href={`/trips/${trip.id}/inquire`} className="block">
+                    <Button variant="primary" size="lg" className="w-full">
+                      Request seats
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button variant="secondary" size="lg" className="w-full" disabled>
+                    Full — no seats left
+                  </Button>
+                )}
+                <WhatsAppButton phone={trip.contactNumber} message={whatsappMessage} label="WhatsApp the driver" />
+                <p className="mt-2.5 text-center text-xs text-text-faint">
+                  The driver accepts or declines your request — you'll be notified either way
+                </p>
+              </div>
+
+              <div className="mt-4 border-t border-border-subtle pt-4 text-center">
+                <p className="mb-1 text-xs text-text-faint">Or call</p>
+                <a href={`tel:${trip.contactNumber}`} className="text-sm font-medium text-slate-700 transition-colors hover:text-brand-600">
+                  {trip.contactNumber}
+                </a>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
