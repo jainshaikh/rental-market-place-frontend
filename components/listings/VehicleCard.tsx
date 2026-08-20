@@ -20,7 +20,11 @@ export function VehicleCard({ vehicle, className }: VehicleCardProps) {
     <Link
       href={`/vehicles/${vehicle.slug}`}
       className={cn(
-        'group block overflow-hidden rounded-card border border-border-subtle bg-surface shadow-xs transition-shadow duration-200 hover:shadow-sm',
+        // text-ink on the root: the card is an <a>, so without it every child
+        // inherits the link colour and the title hover below becomes a no-op.
+        'group block overflow-hidden rounded-card border border-border-subtle bg-surface text-ink shadow-xs',
+        'ease-spring transition-all duration-200',
+        'hover:-translate-y-1.5 hover:border-brand-100 hover:shadow-md',
         className,
       )}
     >
@@ -31,7 +35,7 @@ export function VehicleCard({ vehicle, className }: VehicleCardProps) {
           <img
             src={cover.url}
             alt={cover.altText ?? vehicle.title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="ease-smooth h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.07]"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-text-faint">
@@ -39,46 +43,55 @@ export function VehicleCard({ vehicle, className }: VehicleCardProps) {
           </div>
         )}
 
-        {/* Price badge */}
-        <div className="absolute bottom-2.5 left-2.5 rounded-control bg-ink/80 px-2.5 py-1.5 font-mono text-[13px] font-semibold text-white">
+        {/* Price badge — fills with the brand gradient on hover */}
+        <div className="group-hover:bg-brand absolute bottom-2.5 left-2.5 rounded-control bg-ink/80 px-3 py-1.5 font-mono text-[13px] font-semibold text-white backdrop-blur-md transition-colors duration-200">
           PKR {price}
           <span className="font-sans font-normal opacity-75">/day</span>
         </div>
       </div>
 
       {/* Info */}
-      <div className="p-[14px] pb-[18px]">
-        <h3 className="truncate text-[15px] font-semibold leading-tight tracking-tight text-ink">
+      <div className="p-[15px] pb-[17px]">
+        <h3 className="truncate text-base font-semibold leading-tight tracking-tight text-ink transition-colors group-hover:text-brand-700">
           {vehicle.title}
         </h3>
 
-        {/* Specs row */}
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          <span className="rounded-chip bg-surface-hover px-2.5 py-1 text-xs font-medium text-slate-600">
+        {/* Specs row — flex-wrap is required; three chips plus an icon overflow at card width */}
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          <span className="rounded-chip bg-surface-hover px-2.5 py-1 text-xs font-medium text-text-muted">
             {vehicle.year}
           </span>
-          <span className="rounded-chip bg-surface-hover px-2.5 py-1 text-xs font-medium text-slate-600">
+          <span className="rounded-chip bg-surface-hover px-2.5 py-1 text-xs font-medium text-text-muted">
             {vehicle.transmission === 'AUTOMATIC'
               ? 'Automatic'
               : vehicle.transmission === 'CVT'
                 ? 'CVT'
                 : 'Manual'}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-chip bg-surface-hover px-2.5 py-1 text-xs font-medium text-slate-600">
+          <span className="inline-flex items-center gap-1 rounded-chip bg-surface-hover px-2.5 py-1 text-xs font-medium text-text-muted">
             <Users className="h-3 w-3" />
             {vehicle.seatingCapacity}
           </span>
         </div>
 
         {/* Provider + location */}
-        <div className="mt-3.5 flex items-center justify-between border-t border-border-subtle/70 pt-3.5">
+        <div className="mt-3.5 flex items-center justify-between border-t border-border-subtle pt-3.5">
           <Link
-            href={vehicle.providerProfile?.slug ? `/providers/${vehicle.providerProfile.slug}` : '#'}
+            href={
+              vehicle.providerProfile?.slug ? `/providers/${vehicle.providerProfile.slug}` : '#'
+            }
             onClick={(e) => e.stopPropagation()}
-            className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-600"
+            className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-text-muted hover:text-brand-700"
           >
-            <Avatar name={vehicle.providerProfile?.businessName || '?'} shape="square" size="sm" tone="ink" />
-            <span className="truncate">{vehicle.providerProfile?.businessName ?? 'Unknown provider'}</span>
+            <Avatar
+              name={vehicle.providerProfile?.businessName || '?'}
+              shape="square"
+              size="sm"
+              tone="ink"
+            />
+            <span className="truncate">
+              {vehicle.providerProfile?.businessName ?? 'Unknown provider'}
+            </span>
           </Link>
           {location && (
             <span className="ml-2 flex flex-shrink-0 items-center gap-1 text-xs text-text-muted">
@@ -96,11 +109,11 @@ export function VehicleCard({ vehicle, className }: VehicleCardProps) {
 export function VehicleCardSkeleton() {
   return (
     <div className="overflow-hidden rounded-card border border-border-subtle bg-surface">
-      <div className="aspect-[16/10] animate-shimmer bg-[linear-gradient(90deg,#F1F5F9_0px,#E8EDF3_120px,#F1F5F9_240px)] bg-[length:480px_100%]" />
-      <div className="space-y-3 p-[14px] pb-[18px]">
+      <div className="aspect-[16/10] animate-shimmer bg-[linear-gradient(90deg,#FFF1EA_0px,#FFE4D9_120px,#FFF1EA_240px)] bg-[length:480px_100%]" />
+      <div className="space-y-3 p-[15px] pb-[17px]">
         <div className="h-3.5 w-3/4 rounded-chip bg-surface-hover" />
         <div className="h-3 w-1/2 rounded-chip bg-surface-hover" />
-        <div className="flex justify-between border-t border-border-subtle/70 pt-3.5">
+        <div className="flex justify-between border-t border-border-subtle pt-3.5">
           <div className="h-3 w-1/3 rounded-chip bg-surface-hover" />
           <div className="h-3 w-1/4 rounded-chip bg-surface-hover" />
         </div>

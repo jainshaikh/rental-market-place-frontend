@@ -53,27 +53,37 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        // 4321-Drive design system — brand + neutral + frozen status tones.
-        // Fixed hex (not HSL-var indirection) so they match Design System.dc.html verbatim.
+        // 4321-Drive design system v3 "Sunset Coral" — brand + warm neutrals +
+        // frozen status tones. Fixed hex (not HSL-var indirection) so they match
+        // the design deck verbatim. Token NAMES are unchanged from v2; only the
+        // values moved, so no component needs editing for the palette swap.
         brand: {
-          50: '#EFF6FF',
-          100: '#DBEAFE',
-          600: '#2563EB',
-          700: '#1D4ED8',
-          800: '#1E40AF',
+          50: '#FFF0F2',
+          100: '#FFDDE2',
+          600: '#FF4E64',
+          700: '#E63350',
+          800: '#C2203C',
         },
-        ink: '#0F172A',
-        page: '#F8FAFC',
+        // Second half of the brand gradient. Use via bg-brand (backgroundImage)
+        // rather than reaching for amber directly.
+        amber: {
+          DEFAULT: '#FF9E45',
+          deep: '#F07C18',
+          50: '#FFF6EC',
+        },
+        ink: '#1A0F14',
+        page: '#FFF7F3',
         surface: '#FFFFFF',
-        'surface-hover': '#F1F5F9',
-        'border-subtle': '#E2E8F0',
-        'border-strong': '#CBD5E1',
-        'text-muted': '#64748B',
-        'text-faint': '#94A3B8',
+        'surface-hover': '#FFF1EA',
+        'border-subtle': '#F0DFD7',
+        'border-strong': '#E2CBC1',
+        'text-muted': '#7A5F68',
+        'text-faint': '#A98D96',
         whatsapp: {
           DEFAULT: '#25D366',
           hover: '#1FB855',
         },
+        // Frozen. See components/common/StatusBadge.tsx — do not add a second map.
         status: {
           amber: { fg: '#92400E', bg: '#FFFBEB', border: '#FDE68A', dot: '#D97706' },
           blue: { fg: '#1E3A8A', bg: '#EFF6FF', border: '#BFDBFE', dot: '#2563EB' },
@@ -84,21 +94,33 @@ const config: Config = {
           teal: { fg: '#115E59', bg: '#F0FDFA', border: '#99F6E4', dot: '#0D9488' },
         },
       },
+      backgroundImage: {
+        // The one gradient. Primary buttons, active nav pill, price badge on
+        // hover, stat underlines. Everything else stays flat so it keeps meaning.
+        brand: 'linear-gradient(100deg, #FF4E64 0%, #FF9E45 100%)',
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
-        chip: '6px',
-        control: '8px',
-        media: '10px',
-        card: '14px',
-        sheet: '20px',
+        chip: '8px',
+        control: '11px',
+        media: '14px',
+        card: '18px',
+        sheet: '26px',
       },
       boxShadow: {
-        xs: '0 1px 2px rgba(15,23,42,0.04)',
-        sm: '0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04)',
-        md: '0 4px 14px rgba(15,23,42,0.07), 0 1px 3px rgba(15,23,42,0.04)',
-        lg: '0 16px 40px rgba(15,23,42,0.12), 0 2px 6px rgba(15,23,42,0.05)',
+        // Warm-tinted. Grey shadows read as dirt on a warm page.
+        xs: '0 1px 2px rgba(60,20,30,0.05)',
+        sm: '0 2px 6px rgba(60,20,30,0.06), 0 1px 2px rgba(60,20,30,0.04)',
+        md: '0 8px 24px rgba(60,20,30,0.09), 0 2px 6px rgba(60,20,30,0.05)',
+        lg: '0 24px 60px rgba(60,20,30,0.16), 0 4px 12px rgba(60,20,30,0.06)',
+        coral: '0 10px 30px rgba(255,78,100,0.30)',
+        'coral-lg': '0 16px 38px rgba(255,78,100,0.38)',
+      },
+      transitionTimingFunction: {
+        spring: 'cubic-bezier(.34,1.56,.44,1)',
+        smooth: 'cubic-bezier(.22,1,.36,1)',
       },
       keyframes: {
         'accordion-down': {

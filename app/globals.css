@@ -4,33 +4,35 @@
 
 @layer base {
   :root {
-    /* 4321-Drive design system v2 — light mode only (dark mode was dead code: no
-       toggle ever existed in the UI, so it is not carried forward). Values below
-       are the HSL equivalents of the design system's fixed hex tokens (see
-       tailwind.config.ts `brand`/`ink`/`page`/`status` etc. for the hex source of
-       truth used directly by new components). These CSS vars exist so the ~40
-       not-yet-migrated pages using `bg-background`, `text-foreground`,
-       `border-border`, `bg-primary` etc. inherit the closest new token for free. */
-    --background: 210 40% 98%; /* page: #F8FAFC */
-    --foreground: 222.2 47.4% 11.2%; /* ink: #0F172A */
-    --card: 0 0% 100%; /* surface: #FFFFFF */
-    --card-foreground: 222.2 47.4% 11.2%;
+    /* 4321-Drive design system v3 "Sunset Coral" — light mode only.
+       These are the HSL equivalents of the fixed hex tokens in
+       tailwind.config.ts. They exist ONLY so the pages still using
+       `bg-background`, `text-foreground`, `border-border`, `bg-primary`
+       inherit the new palette for free.
+
+       DELETE THIS BLOCK once those pages are migrated to bg-page /
+       text-ink / border-border-subtle / bg-brand-600. Two sources of
+       truth for the same colour is how the palette drifted in v2. */
+    --background: 18 100% 98%; /* page:           #FFF7F3 */
+    --foreground: 336 26% 8%; /* ink:            #1A0F14 */
+    --card: 0 0% 100%; /* surface:        #FFFFFF */
+    --card-foreground: 336 26% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47.4% 11.2%;
-    --primary: 221.2 83.2% 53.3%; /* brand-600: #2563EB */
+    --popover-foreground: 336 26% 8%;
+    --primary: 352 100% 65%; /* brand-600:      #FF4E64 */
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96.1%; /* surface-hover: #F1F5F9 */
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%; /* text-muted: #64748B */
-    --accent: 213.8 100% 96.9%; /* brand-50: #EFF6FF */
-    --accent-foreground: 224.3 76.3% 48%; /* brand-700: #1D4ED8 */
-    --destructive: 0 72.2% 50.6%; /* status.red DEFAULT: #DC2626 */
+    --secondary: 21 100% 96%; /* surface-hover:  #FFF1EA */
+    --secondary-foreground: 336 26% 8%;
+    --muted: 21 100% 96%;
+    --muted-foreground: 340 12% 43%; /* text-muted:     #7A5F68 */
+    --accent: 351 100% 97%; /* brand-50:       #FFF0F2 */
+    --accent-foreground: 350 76% 55%; /* brand-700:      #E63350 */
+    --destructive: 0 72.2% 50.6%; /* status.red.dot: #DC2626 */
     --destructive-foreground: 0 0% 100%;
-    --border: 214.3 31.8% 91.4%; /* border-subtle: #E2E8F0 */
-    --input: 212.7 26.8% 83.9%; /* border-strong: #CBD5E1 */
-    --ring: 224.3 76.3% 48%; /* brand-700: #1D4ED8 */
-    --radius: 0.5rem;
+    --border: 18 47% 90%; /* border-subtle:  #F0DFD7 */
+    --input: 16 38% 82%; /* border-strong:  #E2CBC1 */
+    --ring: 350 76% 55%; /* brand-700:      #E63350 */
+    --radius: 0.6875rem; /* 11px — was 0.5rem */
   }
 }
 
@@ -40,7 +42,17 @@
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    @apply bg-page text-ink;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+  }
+
+  /* Outfit sits wider than Inter at the same size. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.03em;
   }
 }
