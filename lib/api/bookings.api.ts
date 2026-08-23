@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { Market } from '../../types/api.types';
 
 export type BookingStatus =
   | 'PENDING'
@@ -16,6 +17,7 @@ export interface BookingVehicle {
   model: string;
   year: number;
   pricePerDay: string | number;
+  showroom: { country: Market } | null;
   images: Array<{ url: string; altText: string | null }>;
 }
 
@@ -46,7 +48,7 @@ export interface BookingRequest {
   updatedAt: string;
   user: BookingUser;
   vehicle: BookingVehicle;
-  providerProfile: { id: string; businessName: string };
+  providerProfile: { id: string; businessName: string; user: { phone: string | null } };
   statusHistory: BookingStatusHistory[];
 }
 

@@ -270,7 +270,8 @@ function FilterPanel({ filters, makes, cities, onUpdate, hasActiveFilters, onCle
       )}
 
       <div>
-        <div className={groupLabelCls}>Price per day (PKR)</div>
+        {/* No single currency applies here — results can span multiple markets; each result card shows its own. */}
+        <div className={groupLabelCls}>Price per day</div>
         <div className="flex gap-2">
           <input
             type="number"

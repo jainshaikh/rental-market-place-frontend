@@ -18,7 +18,17 @@ import { StatusBadge } from '../../../../components/common/StatusBadge';
 import { Card } from '../../../../components/ui';
 import { cn } from '../../../../lib/utils/cn';
 
-function StatCard({ label, value, sub, icon: Icon }: { label: string; value: React.ReactNode; sub?: string; icon: LucideIcon }) {
+function StatCard({
+  label,
+  value,
+  sub,
+  icon: Icon,
+}: {
+  label: string;
+  value: React.ReactNode;
+  sub?: string;
+  icon: LucideIcon;
+}) {
   return (
     <Card className="flex items-start gap-3.5">
       <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-control border border-border-subtle bg-page text-text-muted">
@@ -26,7 +36,9 @@ function StatCard({ label, value, sub, icon: Icon }: { label: string; value: Rea
       </div>
       <div className="min-w-0">
         <p className="text-xs font-medium uppercase tracking-wide text-text-muted">{label}</p>
-        <div className="mt-0.5 font-mono text-2xl font-semibold leading-tight text-ink">{value}</div>
+        <div className="mt-0.5 font-mono text-2xl font-semibold leading-tight text-ink">
+          {value}
+        </div>
         {sub && <p className="mt-0.5 text-xs text-text-faint">{sub}</p>}
       </div>
     </Card>
@@ -42,7 +54,10 @@ function CompletenessBar({ score }: { score: number }) {
         <span className="font-mono text-xs font-semibold text-ink">{score}%</span>
       </div>
       <div className="h-[7px] overflow-hidden rounded-full bg-surface-hover">
-        <div className={cn('h-full rounded-full transition-all duration-500', color)} style={{ width: `${score}%` }} />
+        <div
+          className={cn('h-full rounded-full transition-all duration-500', color)}
+          style={{ width: `${score}%` }}
+        />
       </div>
     </div>
   );
@@ -50,7 +65,13 @@ function CompletenessBar({ score }: { score: number }) {
 
 const STATUS_BANNERS: Record<
   string,
-  { tone: 'amber' | 'blue' | 'red' | 'emerald'; icon: LucideIcon; title: string; body: string; cta?: { href: string; label: string } }
+  {
+    tone: 'amber' | 'blue' | 'red' | 'emerald';
+    icon: LucideIcon;
+    title: string;
+    body: string;
+    cta?: { href: string; label: string };
+  }
 > = {
   PENDING: {
     tone: 'amber',
@@ -79,6 +100,13 @@ const STATUS_BANNERS: Record<
     body: 'Your provider profile is live. Start adding vehicles to your fleet to appear in search results.',
     cta: { href: '/provider/vehicles/new', label: 'Add your first vehicle →' },
   },
+  APPROVED_BLOCKED: {
+    tone: 'amber',
+    icon: AlertCircle,
+    title: 'One more step before you can add vehicles',
+    body: 'Your profile is approved, but you still need to add a showroom before your listings can go live.',
+    cta: { href: '/provider/profile', label: 'Add a showroom →' },
+  },
 };
 
 const TONE_CLS: Record<'amber' | 'blue' | 'red' | 'emerald', string> = {
@@ -103,7 +131,11 @@ export default function ProviderDashboardPage() {
   const completeness = profile?.completenessScore?.score ?? 0;
   const showrooms = profile?.showrooms?.length ?? 0;
   const documents = profile?.documents?.length ?? 0;
-  const banner = STATUS_BANNERS[status] ?? STATUS_BANNERS.PENDING;
+  // Admin approval only unlocks vehicle listing once a showroom is on file —
+  // an approved profile alone isn't enough.
+  const canAddVehicle = status === 'APPROVED' && showrooms > 0;
+  const bannerKey = status === 'APPROVED' && !canAddVehicle ? 'APPROVED_BLOCKED' : status;
+  const banner = STATUS_BANNERS[bannerKey] ?? STATUS_BANNERS.PENDING;
   const BannerIcon = banner.icon;
 
   return (
@@ -128,13 +160,28 @@ export default function ProviderDashboardPage() {
 
       {/* Status Banner */}
       {!isLoading && (
-        <div className={cn('flex items-start gap-3 rounded-card border p-4', TONE_CLS[banner.tone])}>
+        <div
+          className={cn('flex items-start gap-3 rounded-card border p-4', TONE_CLS[banner.tone])}
+        >
           <BannerIcon className="h-5 w-5 flex-shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold">{banner.title}</p>
             <p className="mt-0.5 text-sm opacity-90">{banner.body}</p>
+            {bannerKey === 'APPROVED_BLOCKED' && (
+              <ul className="mt-2 space-y-1 text-sm">
+                {showrooms === 0 && (
+                  <li className="flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-current" />
+                    Add a showroom to your profile
+                  </li>
+                )}
+              </ul>
+            )}
             {banner.cta && (
-              <Link href={banner.cta.href} className="mt-2 inline-block text-sm font-semibold hover:underline">
+              <Link
+                href={banner.cta.href}
+                className="mt-2 inline-block text-sm font-semibold hover:underline"
+              >
                 {banner.cta.label}
               </Link>
             )}
@@ -146,18 +193,42 @@ export default function ProviderDashboardPage() {
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Profile Status"
-          value={isLoading ? <span className="inline-block h-6 w-20 animate-pulse rounded-control bg-surface-hover" /> : <StatusBadge status={status} />}
+          value={
+            isLoading ? (
+              <span className="inline-block h-6 w-20 animate-pulse rounded-control bg-surface-hover" />
+            ) : (
+              <StatusBadge status={status} />
+            )
+          }
           icon={User}
         />
         <StatCard
           label="Showrooms"
-          value={isLoading ? <span className="inline-block h-6 w-8 animate-pulse rounded-control bg-surface-hover" /> : showrooms}
-          sub={showrooms === 0 ? 'None added yet' : showrooms === 1 ? '1 location' : `${showrooms} locations`}
+          value={
+            isLoading ? (
+              <span className="inline-block h-6 w-8 animate-pulse rounded-control bg-surface-hover" />
+            ) : (
+              showrooms
+            )
+          }
+          sub={
+            showrooms === 0
+              ? 'None added yet'
+              : showrooms === 1
+                ? '1 location'
+                : `${showrooms} locations`
+          }
           icon={Store}
         />
         <StatCard
           label="Documents"
-          value={isLoading ? <span className="inline-block h-6 w-8 animate-pulse rounded-control bg-surface-hover" /> : documents}
+          value={
+            isLoading ? (
+              <span className="inline-block h-6 w-8 animate-pulse rounded-control bg-surface-hover" />
+            ) : (
+              documents
+            )
+          }
           sub={documents === 0 ? 'None uploaded' : `${documents} uploaded`}
           icon={FileText}
         />
@@ -170,7 +241,10 @@ export default function ProviderDashboardPage() {
         <Card className="space-y-4 lg:col-span-2">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-ink">Profile completeness</p>
-            <Link href="/provider/profile" className="text-xs font-semibold text-brand-600 hover:underline">
+            <Link
+              href="/provider/profile"
+              className="text-xs font-semibold text-brand-600 hover:underline"
+            >
               Edit profile
             </Link>
           </div>
@@ -181,19 +255,21 @@ export default function ProviderDashboardPage() {
             <CompletenessBar score={completeness} />
           )}
 
-          {!isLoading && profile?.completenessScore?.missing && profile.completenessScore.missing.length > 0 && (
-            <div>
-              <p className="mb-2 text-xs font-medium text-text-muted">Still needed</p>
-              <ul className="space-y-1">
-                {profile.completenessScore.missing.map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-xs text-slate-600">
-                    <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-400" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {!isLoading &&
+            profile?.completenessScore?.missing &&
+            profile.completenessScore.missing.length > 0 && (
+              <div>
+                <p className="mb-2 text-xs font-medium text-text-muted">Still needed</p>
+                <ul className="space-y-1">
+                  {profile.completenessScore.missing.map((item) => (
+                    <li key={item} className="flex items-center gap-2 text-xs text-slate-600">
+                      <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-400" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
           {!isLoading && completeness === 100 && (
             <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
@@ -208,13 +284,17 @@ export default function ProviderDashboardPage() {
           <p className="mb-3 text-sm font-semibold text-ink">Quick actions</p>
           <nav className="space-y-1">
             {QUICK_ACTIONS.map((action) => {
-              const disabled = action.gated && status !== 'APPROVED';
+              const disabled = action.gated && !canAddVehicle;
               const Icon = action.icon;
               if (disabled) {
                 return (
                   <span
                     key={action.label}
-                    title="Available after profile is approved"
+                    title={
+                      status !== 'APPROVED'
+                        ? 'Available after profile is approved'
+                        : 'Add a showroom first'
+                    }
                     className="flex cursor-not-allowed select-none items-center gap-2.5 rounded-control px-3 py-2 text-sm text-text-faint"
                   >
                     <Icon className="h-4 w-4" />

@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Car, Plus, Search } from 'lucide-react';
 import { useMyVehicles, useArchiveVehicle } from '../../../../hooks/useVehicles';
+import { useProviderProfile } from '../../../../hooks/useProviderProfile';
 import { StatusBadge } from '../../../../components/common/StatusBadge';
 import { Button, Card, ConfirmDialog, EmptyState, SegmentedTabs } from '../../../../components/ui';
 import type { VehicleStatus } from '../../../../types/enums';
+import { getCurrencyCode } from '../../../../lib/utils/currency';
 
 const STATUS_FILTER_OPTIONS = [
   { label: 'All', value: '' },
@@ -30,9 +32,13 @@ export default function ProviderVehiclesPage() {
   });
 
   const archive = useArchiveVehicle();
+  const { data: providerProfile } = useProviderProfile();
 
   const vehicles = data?.data ?? [];
   const meta = data?.meta;
+  // A provider has exactly one showroom (see ShowroomsService), so its market
+  // applies to every vehicle this provider lists.
+  const currency = getCurrencyCode(providerProfile?.showrooms?.[0]?.country);
 
   return (
     <div className="space-y-5">
@@ -133,7 +139,7 @@ export default function ProviderVehiclesPage() {
 
                   <div className="mt-2 flex items-center gap-4">
                     <p className="font-mono text-sm font-semibold text-ink">
-                      PKR {Number(vehicle.pricePerDay).toLocaleString()}
+                      {currency} {Number(vehicle.pricePerDay).toLocaleString()}
                       <span className="font-sans text-xs font-normal text-text-faint">/day</span>
                     </p>
                     {vehicle.images.length > 0 && (

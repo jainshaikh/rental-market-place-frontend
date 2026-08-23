@@ -21,7 +21,6 @@ export const updateProviderSchema = z.object({
   businessName: z.string().min(2).max(150).optional(),
   businessDescription: z.string().max(2000).optional().or(z.literal('')),
   logoUrl: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  bannerUrl: z.string().url('Must be a valid URL').optional().or(z.literal('')),
 });
 
 export const showroomSchema = z.object({

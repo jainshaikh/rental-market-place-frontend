@@ -29,6 +29,14 @@ export enum VehicleStatus {
   ARCHIVED = 'ARCHIVED',
 }
 
+// The markets this platform actually operates in, running in parallel —
+// see lib/config/markets.ts for currency/phone/city metadata per code.
+export enum Market {
+  PK = 'PK',
+  SA = 'SA',
+  AE = 'AE',
+}
+
 export enum BookingRequestStatus {
   PENDING = 'PENDING',
   CONTACTED = 'CONTACTED',

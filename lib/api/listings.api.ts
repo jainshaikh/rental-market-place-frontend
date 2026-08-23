@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { ApiResponse, PaginationMeta, Transmission, FuelType } from '../../types/api.types';
+import type { ApiResponse, PaginationMeta, Transmission, FuelType, Market } from '../../types/api.types';
 
 // Public listing shapes (no provider-private fields)
 export interface ListingImage {
@@ -23,7 +23,12 @@ export interface ListingVehicleCard {
   status: string;
   images: ListingImage[];
   providerProfile: { businessName: string; slug: string };
-  showroom: { city: string; area: string | null } | null;
+  showroom: { city: string; area: string | null; country: Market } | null;
+  // Computed, not stored — is there an ACCEPTED booking covering this exact moment.
+  // Browse results exclude BOOKED vehicles by default; a vehicle's own detail
+  // page still shows it, marked unavailable, so a direct link never 404s.
+  availability: 'AVAILABLE' | 'BOOKED';
+  bookedUntil: string | null;
 }
 
 export interface ListingFeature {
@@ -42,6 +47,7 @@ export interface ListingShowroom {
   operatingHours: Record<string, string> | null;
   mapLat: number | null;
   mapLng: number | null;
+  country: Market;
 }
 
 export interface ListingVehicleDetail extends ListingVehicleCard {
@@ -78,6 +84,8 @@ export interface ListingFilters {
   providerSlug?: string;
   page?: number;
   limit?: number;
+  /** Include vehicles currently out on a rental — excluded by default. */
+  includeBooked?: boolean;
 }
 
 export interface ListingsResponse {

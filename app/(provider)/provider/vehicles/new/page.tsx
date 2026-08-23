@@ -13,6 +13,7 @@ import {
   COMMON_FEATURES,
 } from '../../../../../lib/validations/vehicle.schema';
 import { cn } from '../../../../../lib/utils/cn';
+import { getCurrencyCode } from '../../../../../lib/utils/currency';
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -33,8 +34,9 @@ const inputCls =
 
 export default function NewVehiclePage() {
   const router = useRouter();
-  const { data: profile } = useProviderProfile();
+  const { data: profile, isLoading: isProfileLoading } = useProviderProfile();
   const createVehicle = useCreateVehicle();
+  const currency = getCurrencyCode(profile?.showrooms?.[0]?.country);
 
   const {
     register,
@@ -67,20 +69,45 @@ export default function NewVehiclePage() {
     }
   };
 
+  const showroom = profile?.showrooms?.[0];
+
   const onSubmit = async (values: VehicleFormValues) => {
     const result = await createVehicle.mutateAsync({
       ...values,
       engineType: values.engineType || undefined,
-      locationText: values.locationText || undefined,
       availabilityNotes: values.availabilityNotes || undefined,
       pricingNotes: values.pricingNotes || undefined,
       specialConditions: values.specialConditions || undefined,
-      showroomId: values.showroomId || undefined,
+      showroomId: showroom?.id,
       pricePerWeek: values.pricePerWeek ?? undefined,
     });
 
     router.push(`/provider/vehicles/${result.data.id}/edit`);
   };
+
+  const canAddVehicle = profile?.verificationStatus === 'APPROVED' && !!showroom;
+
+  if (!isProfileLoading && !canAddVehicle) {
+    return (
+      <div className="max-w-2xl rounded-xl border border-amber-200 bg-amber-50 p-6">
+        <h1 className="text-lg font-semibold text-amber-900">Not ready to add vehicles yet</h1>
+        <p className="mt-2 text-sm text-amber-800">
+          Before you can add vehicles, your profile needs:
+        </p>
+        <ul className="mt-2 space-y-1 text-sm text-amber-800">
+          {profile?.verificationStatus !== 'APPROVED' && <li>• Admin approval of your provider profile</li>}
+          {!showroom && <li>• A showroom added to your profile</li>}
+        </ul>
+        <button
+          type="button"
+          onClick={() => router.push('/provider/profile')}
+          className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+        >
+          Go to profile
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -176,7 +203,7 @@ export default function NewVehiclePage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label required>Price per day (PKR)</Label>
+              <Label required>Price per day ({currency})</Label>
               <input
                 type="number"
                 step="0.01"
@@ -187,7 +214,7 @@ export default function NewVehiclePage() {
               <FieldError message={errors.pricePerDay?.message} />
             </div>
             <div>
-              <Label>Price per week (PKR)</Label>
+              <Label>Price per week ({currency})</Label>
               <input
                 type="number"
                 step="0.01"
@@ -213,28 +240,25 @@ export default function NewVehiclePage() {
         <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5">
           <p className="text-sm font-semibold text-slate-800">Location & details</p>
 
-          {profile?.showrooms && profile.showrooms.length > 0 && (
+          {showroom ? (
             <div>
-              <Label>Showroom</Label>
-              <select {...register('showroomId')} className={inputCls}>
-                <option value="">No specific showroom</option>
-                {profile.showrooms.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} — {s.city}
-                  </option>
-                ))}
-              </select>
+              <Label>Location</Label>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5">
+                <p className="text-sm font-medium text-slate-800">{showroom.name}</p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  {showroom.address}, {showroom.area ? `${showroom.area}, ` : ''}
+                  {showroom.city.charAt(0).toUpperCase() + showroom.city.slice(1)}
+                </p>
+              </div>
+              <p className="mt-1 text-xs text-slate-400">
+                This vehicle will be listed at your showroom address.
+              </p>
             </div>
+          ) : (
+            <p className="text-xs text-amber-600">
+              No showroom on file — add one in your profile so this vehicle has a listed location.
+            </p>
           )}
-
-          <div>
-            <Label>Location text</Label>
-            <input
-              {...register('locationText')}
-              placeholder="e.g. Dubai Marina, near Jumeirah Beach"
-              className={inputCls}
-            />
-          </div>
 
           <div>
             <Label>Availability notes</Label>

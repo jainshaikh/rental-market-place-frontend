@@ -3,8 +3,8 @@ import { z } from 'zod';
 export const createBookingSchema = z
   .object({
     vehicleId: z.string().min(1),
-    requestedFromDate: z.string().min(1, 'Pick-up date is required'),
-    requestedToDate: z.string().min(1, 'Return date is required'),
+    requestedFromDate: z.string().min(1, 'Pick-up date & time is required'),
+    requestedToDate: z.string().min(1, 'Return date & time is required'),
     pickupLocation: z.string().max(200).optional().or(z.literal('')),
     message: z.string().max(1000).optional().or(z.literal('')),
   })

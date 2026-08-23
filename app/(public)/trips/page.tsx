@@ -6,7 +6,8 @@ import type { TripsResponse, TripMetaCities } from '../../../lib/api/trips.api';
 
 export const metadata: Metadata = {
   title: 'Intercity Trips — Rental Marketplace',
-  description: 'Find a ride between cities. Browse drivers heading to your destination on your date and contact them directly on WhatsApp.',
+  description:
+    'Find a ride between cities. Browse drivers heading to your destination on your date and contact them directly on WhatsApp.',
 };
 
 interface PageProps {
@@ -26,10 +27,13 @@ export default async function TripsPage({ searchParams }: PageProps) {
   const cities: TripMetaCities = citiesRes?.data ?? { origins: [], destinations: [] };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 py-9 sm:px-6 lg:px-8">
       <div className="mb-7">
-        <h1 className="text-[26px] font-bold tracking-tight text-ink">Intercity Trips</h1>
-        <p className="mt-1.5 text-sm text-text-muted">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-700">
+          Ride sharing
+        </p>
+        <h1 className="text-[30px] font-bold tracking-[-0.04em] text-ink">Intercity Trips</h1>
+        <p className="mt-2 text-sm text-text-muted">
           {initialData?.meta.total
             ? `${initialData.meta.total.toLocaleString()} upcoming trips — find a ride and connect with the driver on WhatsApp`
             : 'Going from one city to another? Find a driver already headed your way.'}

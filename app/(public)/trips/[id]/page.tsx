@@ -4,7 +4,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, BadgeCheck, ChevronRight } from 'lucide-react';
 import { fetchTripById } from '../../../../lib/api/server';
+import { getCurrencyCode } from '../../../../lib/utils/currency';
 import { Button, Card, WhatsAppButton } from '../../../../components/ui';
+import { RatingSummaryBadge } from '../../../../components/common/RatingSummaryBadge';
+import { ReviewsList } from '../../../../components/common/ReviewsList';
 
 interface PageProps {
   params: { id: string };
@@ -21,7 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const t = res.data;
   return {
     title: `${titleCase(t.originCity)} → ${titleCase(t.destinationCity)} — Rental Marketplace`,
-    description: `Trip from ${titleCase(t.originCity)} to ${titleCase(t.destinationCity)} on ${new Date(t.departureAt).toLocaleDateString()}. PKR ${Number(t.pricePerSeat).toLocaleString()} per seat.`,
+    description: `Trip from ${titleCase(t.originCity)} to ${titleCase(t.destinationCity)} on ${new Date(t.departureAt).toLocaleDateString()}. ${getCurrencyCode(t.userVehicle?.country)} ${Number(t.pricePerSeat).toLocaleString()} per seat.`,
   };
 }
 
@@ -32,6 +35,7 @@ export default async function TripDetailPage({ params }: PageProps) {
   const trip = res.data;
   const departure = new Date(trip.departureAt);
   const price = Number(trip.pricePerSeat).toLocaleString();
+  const currency = getCurrencyCode(trip.userVehicle?.country);
 
   const whatsappMessage = `Hi, I'm interested in your trip from ${titleCase(trip.originCity)} to ${titleCase(trip.destinationCity)} on ${departure.toLocaleString('en-AE', { dateStyle: 'medium', timeStyle: 'short' })}. Is a seat still available?`;
 
@@ -110,6 +114,7 @@ export default async function TripDetailPage({ params }: PageProps) {
               {trip.userVehicle.year ? ` (${trip.userVehicle.year})` : ''}
             </p>
             {trip.userVehicle.color && <p className="mt-1 text-sm text-text-muted">{trip.userVehicle.color}</p>}
+            <RatingSummaryBadge subjectType="USER_VEHICLE" subjectId={trip.userVehicle.id} size="sm" className="mt-2" />
           </Card>
 
           {trip.notes && (
@@ -132,8 +137,14 @@ export default async function TripDetailPage({ params }: PageProps) {
                   <BadgeCheck className="h-3.5 w-3.5" />
                   Identity &amp; documents verified
                 </p>
+                <RatingSummaryBadge subjectType="USER" subjectId={trip.postedBy.id} size="sm" className="mt-1" />
               </div>
             </div>
+          </Card>
+
+          {/* Reviews */}
+          <Card>
+            <ReviewsList subjectType="USER" subjectId={trip.postedBy.id} title="Driver reviews" />
           </Card>
         </div>
 
@@ -142,7 +153,7 @@ export default async function TripDetailPage({ params }: PageProps) {
           <div className="sticky top-24 space-y-3.5">
             <Card padding="lg" className="shadow-md">
               <div className="flex items-baseline gap-1.5">
-                <span className="font-mono text-[26px] font-semibold tracking-tight text-ink">PKR {price}</span>
+                <span className="font-mono text-[26px] font-semibold tracking-tight text-ink">{currency} {price}</span>
                 <span className="text-[13px] text-text-muted">/seat</span>
               </div>
               <p className="mt-1 text-[13px] text-text-muted">

@@ -13,7 +13,7 @@ const passwordSchema = z
 export const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
   email: z.string().email('Please enter a valid email address'),
-  phone: z.string().max(20).optional().or(z.literal('')),
+  phone: z.string().min(1, 'Phone number is required').max(20),
   password: passwordSchema,
   confirmPassword: z.string(),
   role: z.enum([Role.USER, Role.PROVIDER]).default(Role.USER),

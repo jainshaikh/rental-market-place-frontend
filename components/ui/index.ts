@@ -10,3 +10,4 @@ export { WhatsAppButton } from './WhatsAppButton';
 export { Avatar } from './Avatar';
 export { Checkbox, PillToggle, RadioCard } from './Selection';
 export { Stepper, type StepDefinition } from './Stepper';
+export { RatingStars, RatingBadge } from './RatingStars';

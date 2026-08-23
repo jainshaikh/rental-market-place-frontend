@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Inbox, Image as ImageIcon, MapPin } from 'lucide-react';
+import { Inbox, Image as ImageIcon, MapPin, Phone } from 'lucide-react';
 import { useProviderInquiries, useUpdateBookingStatus } from '../../../../hooks/useBookings';
 import type { BookingRequest, BookingStatus } from '../../../../lib/api/bookings.api';
 import { cn } from '../../../../lib/utils/cn';
-import { Button, Card, EmptyState, Pagination, SegmentedTabs, Textarea } from '../../../../components/ui';
+import { Button, Card, EmptyState, Pagination, SegmentedTabs, Textarea, WhatsAppButton } from '../../../../components/ui';
 import { StatusBadge } from '../../../../components/common/StatusBadge';
 import * as Dialog from '@radix-ui/react-dialog';
 
@@ -158,8 +158,8 @@ function InquiryCard({
   inquiry: BookingRequest;
   onAction: (booking: BookingRequest, newStatus: BookingStatus) => void;
 }) {
-  const fromDate = new Date(inquiry.requestedFromDate).toLocaleDateString('en-AE', { dateStyle: 'medium' });
-  const toDate = new Date(inquiry.requestedToDate).toLocaleDateString('en-AE', { dateStyle: 'medium' });
+  const fromDate = new Date(inquiry.requestedFromDate).toLocaleString('en-AE', { dateStyle: 'medium', timeStyle: 'short' });
+  const toDate = new Date(inquiry.requestedToDate).toLocaleString('en-AE', { dateStyle: 'medium', timeStyle: 'short' });
   const days = Math.max(
     0,
     Math.ceil(
@@ -193,6 +193,15 @@ function InquiryCard({
               <p className="mt-0.5 text-xs text-text-muted">
                 {inquiry.user.name} · {inquiry.user.email}
               </p>
+              {inquiry.user.phone && (
+                <div className="mt-1.5 flex items-center gap-3">
+                  <span className="flex items-center gap-1 font-mono text-xs text-text-muted">
+                    <Phone className="h-3 w-3" />
+                    {inquiry.user.phone}
+                  </span>
+                  <WhatsAppButton phone={inquiry.user.phone} variant="text" label="WhatsApp customer" />
+                </div>
+              )}
             </div>
             <StatusBadge status={inquiry.status} size="sm" label={INBOX_LABEL[inquiry.status]} />
           </div>

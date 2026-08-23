@@ -27,10 +27,12 @@ export const metadata: Metadata = {
   },
   description:
     'Discover and book rental vehicles from verified providers. Compare prices, browse fleets, and submit booking inquiries easily.',
-  // NOTE: locale. The rest of the app is Pakistan (PKR in VehicleCard and
-  // TripCard, +92 in register, "across Pakistan" in providers/page.tsx).
-  // These keywords and the openGraph locale below are the outliers — decide
-  // which market wins, then fix this file and app/page.tsx together.
+  // NOTE: as of the 2026-08-23 multi-market work, currency display across
+  // the app is dynamic per listing/trip (see lib/utils/currency.ts) — Pakistan
+  // and Saudi Arabia/UAE data now coexist correctly. This file's UAE-flavored
+  // keywords/locale and the Pakistan-flavored copy still in app/page.tsx's
+  // marketing text remain un-reconciled — that's a content/SEO decision
+  // (which market's story leads on the homepage), not a data-model gap.
   keywords: [
     'car rental',
     'vehicle hire',

@@ -56,4 +56,19 @@ export const authApi = {
     );
     return response.data;
   },
+
+  resendVerification: async () => {
+    const response = await apiClient.post<ApiResponse<{ message: string }>>(
+      '/auth/resend-verification',
+    );
+    return response.data;
+  },
+
+  changePassword: async (data: { currentPassword: string; newPassword: string }) => {
+    const response = await apiClient.post<ApiResponse<{ message: string }>>(
+      '/auth/change-password',
+      data,
+    );
+    return response.data;
+  },
 };

@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { ApiResponse } from '../../types/api.types';
+import type { ApiResponse, Market } from '../../types/api.types';
 
 export type UserVehicleStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
 
@@ -20,6 +20,7 @@ export interface UserVehicle {
   year: number | null;
   color: string | null;
   plateNumber: string;
+  country: Market;
   status: UserVehicleStatus;
   rejectionReason: string | null;
   createdAt: string;

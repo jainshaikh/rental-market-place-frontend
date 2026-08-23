@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Image as ImageIcon, MapPin, Users } from 'lucide-react';
 import { cn } from '../../lib/utils/cn';
 import type { ListingVehicleCard } from '../../lib/api/listings.api';
+import { getCurrencyCode } from '../../lib/utils/currency';
 import { Avatar } from '../ui';
 
 interface VehicleCardProps {
@@ -14,6 +15,7 @@ interface VehicleCardProps {
 export function VehicleCard({ vehicle, className }: VehicleCardProps) {
   const cover = vehicle.images?.[0];
   const price = Number(vehicle.pricePerDay).toLocaleString();
+  const currency = getCurrencyCode(vehicle.showroom?.country);
   const location = vehicle.showroom?.city ?? vehicle.locationText ?? null;
 
   return (
@@ -45,7 +47,7 @@ export function VehicleCard({ vehicle, className }: VehicleCardProps) {
 
         {/* Price badge — fills with the brand gradient on hover */}
         <div className="group-hover:bg-brand absolute bottom-2.5 left-2.5 rounded-control bg-ink/80 px-3 py-1.5 font-mono text-[13px] font-semibold text-white backdrop-blur-md transition-colors duration-200">
-          PKR {price}
+          {currency} {price}
           <span className="font-sans font-normal opacity-75">/day</span>
         </div>
       </div>

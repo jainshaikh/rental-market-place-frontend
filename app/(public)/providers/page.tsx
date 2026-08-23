@@ -8,11 +8,7 @@ export const metadata: Metadata = {
   description: 'Browse all verified vehicle rental providers in Pakistan.',
 };
 
-export default async function ProvidersPage({
-  searchParams,
-}: {
-  searchParams: { page?: string };
-}) {
+export default async function ProvidersPage({ searchParams }: { searchParams: { page?: string } }) {
   const page = Number(searchParams.page ?? 1);
   const res = await fetchAllProviders(page, 12);
   const providers = res?.data ?? [];
@@ -24,7 +20,9 @@ export default async function ProvidersPage({
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900">Rental Providers</h1>
         <p className="mt-2 text-slate-500">
-          {meta ? `${meta.total} verified provider${meta.total !== 1 ? 's' : ''} across Pakistan` : 'Browse verified rental providers'}
+          {meta
+            ? `${meta.total} verified provider${meta.total !== 1 ? 's' : ''} across Pakistan`
+            : 'Browse verified rental providers'}
         </p>
       </div>
 
@@ -32,8 +30,12 @@ export default async function ProvidersPage({
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-300">
             <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
             </svg>
           </div>
           <p className="text-lg font-medium text-slate-700">No providers yet</p>
@@ -107,7 +109,7 @@ function ProviderCard({ provider }: { provider: PublicProviderCard }) {
         </div>
 
         <div className="min-w-0">
-          <h2 className="truncate font-semibold text-slate-900 group-hover:text-primary transition-colors">
+          <h2 className="truncate font-semibold text-slate-900 transition-colors group-hover:text-primary">
             {provider.businessName}
           </h2>
           {provider.isFeatured && (
@@ -125,19 +127,36 @@ function ProviderCard({ provider }: { provider: PublicProviderCard }) {
       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500">
         <span className="flex items-center gap-1">
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h10l2-2z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h10l2-2z"
+            />
           </svg>
           {vehicleCount} vehicle{vehicleCount !== 1 ? 's' : ''}
         </span>
         {city && (
           <span className="flex items-center gap-1">
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+              />
             </svg>
             {city.charAt(0).toUpperCase() + city.slice(1)}
           </span>

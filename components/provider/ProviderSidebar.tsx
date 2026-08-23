@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CarFront, Car, Inbox, LayoutDashboard, LogOut, MessageSquare, Route, User, type LucideIcon } from 'lucide-react';
+import { CarFront, Car, Inbox, LayoutDashboard, LogOut, MessageSquare, Route, Star, User, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useProviderProfile } from '../../hooks/useProviderProfile';
 import { StatusBadge } from '../common/StatusBadge';
@@ -18,6 +18,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon; requiresApprov
   { href: '/provider/trips', label: 'Trips', icon: Route, requiresApproval: false },
   { href: '/provider/my-vehicles', label: 'My Vehicles', icon: CarFront, requiresApproval: false },
   { href: '/provider/trip-inquiries', label: 'Trip Requests', icon: MessageSquare, requiresApproval: false },
+  { href: '/provider/reviews', label: 'Reviews', icon: Star, requiresApproval: false },
 ];
 
 export function ProviderSidebar() {

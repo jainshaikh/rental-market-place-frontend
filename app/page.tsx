@@ -1,96 +1,161 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { fetchFeaturedListings, fetchDistinctMakes, fetchDistinctCities } from '../lib/api/server';
+import { BadgeCheck, MessageSquare, Tag, Zap, ArrowRight } from 'lucide-react';
+import {
+  fetchFeaturedListings,
+  fetchDistinctCities,
+  fetchListings,
+  fetchAllProviders,
+} from '../lib/api/server';
 import { PublicNavbar } from '../components/layout/PublicNavbar';
 import { VehicleCard } from '../components/listings/VehicleCard';
 import type { ListingVehicleCard } from '../lib/api/listings.api';
 import { HeroSearch } from '../components/home/HeroSearch';
+import { HeroStats, type HeroStat } from '../components/home/HeroStats';
+import { HeroCollage } from '../components/home/HeroCollage';
+import { Reveal } from '../components/common/Reveal';
 
 export const metadata: Metadata = {
-  title: 'Rental Marketplace — Find Your Perfect Car in the UAE',
+  title: 'Rental Marketplace — Find Your Perfect Car in Pakistan',
   description:
-    'Browse hundreds of rental vehicles from verified providers across Dubai, Abu Dhabi, and the UAE. Compare prices, check availability, and send inquiries in seconds.',
+    'Browse hundreds of rental vehicles from verified providers across Karachi, Lahore, and Islamabad. Compare prices, check availability, and send inquiries in seconds.',
   openGraph: {
     title: 'Rental Marketplace — Find Your Perfect Car',
     description: 'Verified rental providers. No hidden fees. Book in minutes.',
   },
 };
 
+const TRUST_SIGNALS = [
+  {
+    Icon: BadgeCheck,
+    title: 'Verified providers',
+    sub: 'Every licence and trade permit is reviewed before listing.',
+  },
+  {
+    Icon: MessageSquare,
+    title: 'Free to inquire',
+    sub: 'Message the owner directly. No payment until confirmed.',
+  },
+  {
+    Icon: Tag,
+    title: 'Transparent pricing',
+    sub: 'Real daily and weekly rates. No hidden fees at handover.',
+  },
+  {
+    Icon: Zap,
+    title: 'Fast response',
+    sub: 'Most providers reply the same day, often within an hour.',
+  },
+];
+
 export default async function HomePage() {
-  const [featuredRes, citiesRes] = await Promise.all([
+  // Both /listings and /providers return meta.total, so the two headline
+  // counters are real numbers — limit=1 keeps the payload tiny since we only
+  // want the count. There is no stats endpoint; if you add one, swap these two
+  // calls for it rather than fetching a page of rows to read its total.
+  const [featuredRes, citiesRes, listingsRes, providersRes] = await Promise.all([
     fetchFeaturedListings(6),
     fetchDistinctCities(),
+    fetchListings({ limit: '1' }),
+    fetchAllProviders(1, 1),
   ]);
 
   const featured: ListingVehicleCard[] = featuredRes?.data ?? [];
   const cities: string[] = citiesRes?.data ?? [];
 
+  const vehicleCount = listingsRes?.meta?.total ?? 0;
+  const providerCount = providersRes?.meta?.total ?? 0;
+
+  // Only render counters backed by data. The design also showed an
+  // "Avg. provider rating" of 4.8 — there is no rating field on the provider
+  // model, so it is omitted rather than hardcoded. Add it back here once
+  // ratings exist; the component takes any number of stats.
+  const heroStats: HeroStat[] = [
+    ...(vehicleCount ? [{ value: vehicleCount, suffix: '+', label: 'Vehicles listed' }] : []),
+    ...(providerCount ? [{ value: providerCount, label: 'Verified providers' }] : []),
+  ];
+
+  // First three featured photos double as the hero collage.
+  const collageImages = featured.slice(0, 3).map((v) => v.images?.[0]?.url);
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-page">
       <PublicNavbar />
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}
-      <section className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl" />
+      <section className="relative overflow-hidden bg-ink text-white">
+        {/* Warm ambient wash. Two soft coral/amber pools instead of the old
+            blue-on-slate glow — decorative only, hence pointer-events-none. */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -right-40 -top-48 h-[30rem] w-[30rem] rounded-full bg-brand-600/25 blur-[120px]" />
+          <div className="bg-amber/20 absolute -bottom-32 -left-24 h-80 w-80 rounded-full blur-[100px]" />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24">
+        <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-4 pb-28 pt-20 sm:px-6 lg:grid-cols-[1fr_minmax(0,560px)] lg:px-8">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/10 text-white/90 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-              <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
-              Verified providers across the UAE
+            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.07] px-3.5 py-1.5 text-xs font-semibold text-white/90 backdrop-blur-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-whatsapp" />
+              {providerCount > 0
+                ? `${providerCount.toLocaleString()} verified providers across Pakistan`
+                : 'Verified providers across Pakistan'}
             </div>
 
-            <h1 className="text-5xl sm:text-6xl font-extrabold leading-tight mb-5">
-              Find your<br />
-              <span className="text-primary">perfect rental</span>
+            <h1 className="mb-6 text-5xl font-bold leading-[1.03] tracking-[-0.045em] sm:text-[68px]">
+              Find your
+              <br />
+              {/* The gradient lives on the text here — the one place in the hero
+                  it appears, so it reads as emphasis rather than decoration. */}
+              <span className="bg-brand bg-clip-text text-transparent">perfect rental</span>
             </h1>
 
-            <p className="text-lg text-slate-300 mb-8 leading-relaxed max-w-xl">
-              Browse vehicles from verified providers, compare options, and send a booking
-              inquiry — all in one place. No hidden fees.
+            <p className="mb-9 max-w-xl text-[17px] leading-relaxed text-white/60">
+              Compare vehicles from verified providers, see real daily and weekly rates, and message
+              the owner directly. No hidden fees, no payment until it&rsquo;s confirmed.
             </p>
 
-            {/* Search bar */}
             <HeroSearch cities={cities} />
 
-            {/* CTA row */}
-            <div className="mt-6 flex flex-wrap gap-4 items-center">
+            <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link
                 href="/vehicles"
-                className="bg-primary text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+                className="bg-brand shadow-coral ease-spring hover:shadow-coral-lg inline-flex h-[52px] items-center rounded-control px-7 text-[15px] font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
               >
                 Browse all vehicles
               </Link>
               <Link
                 href="/register?role=PROVIDER"
-                className="border border-white/20 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-white/10 transition-colors"
+                className="ease-spring group inline-flex h-[52px] items-center gap-2 rounded-control border border-white/20 px-7 text-[15px] font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/[0.06] active:translate-y-0"
               >
-                List your fleet →
+                List your fleet
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
             </div>
+
+            {heroStats.length > 0 && <HeroStats stats={heroStats} />}
           </div>
+
+          {/* Collage: hidden below lg — it is absolutely positioned at a fixed
+              height and has no sensible stacked form. */}
+          <HeroCollage images={collageImages} />
         </div>
       </section>
 
       {/* ── Trust signals ─────────────────────────────────────────────── */}
-      <section className="bg-slate-50 border-b border-slate-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            {[
-              { icon: '✓', title: 'Verified providers', sub: 'Every provider is reviewed' },
-              { icon: '💬', title: 'Free to inquire', sub: 'No payment until confirmed' },
-              { icon: '🔍', title: 'Transparent pricing', sub: 'Daily and weekly rates shown' },
-              { icon: '⚡', title: 'Fast response', sub: 'Most providers reply same day' },
-            ].map((item) => (
-              <div key={item.title} className="flex flex-col items-center gap-1.5">
-                <span className="text-2xl">{item.icon}</span>
-                <p className="text-sm font-semibold text-slate-800">{item.title}</p>
-                <p className="text-xs text-slate-500">{item.sub}</p>
-              </div>
+      <section className="border-b border-border-subtle bg-surface">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+            {TRUST_SIGNALS.map(({ Icon, title, sub }, i) => (
+              <Reveal key={title} delay={i * 70}>
+                <div className="group">
+                  {/* Icons, not emoji — emoji render differently per platform and
+                      cannot inherit the brand colour on hover. */}
+                  <span className="ease-spring group-hover:bg-brand mb-4 inline-flex h-11 w-11 items-center justify-center rounded-media border border-brand-100 bg-brand-50 text-brand-700 transition-all duration-200 group-hover:-rotate-6 group-hover:scale-105 group-hover:border-transparent group-hover:text-white">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <p className="text-[15px] font-semibold text-ink">{title}</p>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{sub}</p>
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -98,23 +163,35 @@ export default async function HomePage() {
 
       {/* ── Featured vehicles ─────────────────────────────────────────── */}
       {featured.length > 0 && (
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">Featured vehicles</h2>
-              <p className="text-slate-500 text-sm mt-1">Hand-picked from our top providers</p>
+        <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="mb-9 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-700">
+                  Featured
+                </p>
+                <h2 className="text-[28px] font-bold tracking-[-0.038em] text-ink">
+                  Hand-picked vehicles
+                </h2>
+                <p className="mt-2 text-sm text-text-muted">
+                  Chosen from our highest-rated providers
+                </p>
+              </div>
+              <Link
+                href="/vehicles"
+                className="group inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700"
+              >
+                View all
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+              </Link>
             </div>
-            <Link
-              href="/vehicles"
-              className="text-sm font-semibold text-primary hover:underline"
-            >
-              View all →
-            </Link>
-          </div>
+          </Reveal>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {featured.map((vehicle) => (
-              <VehicleCard key={vehicle.id} vehicle={vehicle} />
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {featured.map((vehicle, i) => (
+              <Reveal key={vehicle.id} delay={i * 70}>
+                <VehicleCard vehicle={vehicle} />
+              </Reveal>
             ))}
           </div>
         </section>
@@ -122,18 +199,24 @@ export default async function HomePage() {
 
       {/* ── Browse by city ────────────────────────────────────────────── */}
       {cities.length > 0 && (
-        <section className="bg-slate-50 border-t border-slate-100">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <h2 className="text-xl font-bold text-slate-900 mb-5">Browse by city</h2>
-            <div className="flex flex-wrap gap-3">
-              {cities.slice(0, 10).map((city) => (
-                <Link
-                  key={city}
-                  href={`/vehicles?city=${city}`}
-                  className="px-4 py-2 bg-white border border-slate-200 rounded-full text-sm font-medium text-slate-700 hover:border-primary hover:text-primary transition-colors"
-                >
-                  {city.charAt(0).toUpperCase() + city.slice(1)}
-                </Link>
+        <section className="border-y border-border-subtle bg-surface">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
+            <Reveal>
+              <h2 className="text-[22px] font-bold tracking-[-0.035em] text-ink">Browse by city</h2>
+              <p className="mt-2 text-sm text-text-muted">
+                Pick a city to see what&rsquo;s available right now
+              </p>
+            </Reveal>
+            <div className="mt-7 flex flex-wrap gap-2.5">
+              {cities.slice(0, 10).map((city, i) => (
+                <Reveal key={city} delay={i * 35}>
+                  <Link
+                    href={`/vehicles?city=${city}`}
+                    className="text-ink-soft ease-spring inline-flex h-10 items-center rounded-control border border-border-subtle bg-page px-4 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-600 hover:text-brand-700 hover:shadow-sm active:translate-y-0"
+                  >
+                    {city.charAt(0).toUpperCase() + city.slice(1)}
+                  </Link>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -141,36 +224,53 @@ export default async function HomePage() {
       )}
 
       {/* ── Provider CTA ──────────────────────────────────────────────── */}
-      <section className="bg-primary">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 text-center text-white">
-          <h2 className="text-2xl font-bold mb-3">Own a fleet? List it here.</h2>
-          <p className="text-white/80 mb-7 max-w-md mx-auto text-sm leading-relaxed">
-            Join hundreds of verified providers. Reach thousands of customers looking to rent
-            vehicles across the UAE. Free to sign up.
-          </p>
-          <Link
-            href="/register?role=PROVIDER"
-            className="inline-block bg-white text-primary px-7 py-3 rounded-xl font-semibold text-sm hover:bg-white/90 transition-colors shadow-lg"
-          >
-            Get started as a provider
-          </Link>
+      <section className="relative overflow-hidden bg-ink">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -right-32 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-brand-600/20 blur-[110px]" />
+          <div className="bg-amber/15 absolute -left-32 top-0 h-64 w-64 rounded-full blur-[90px]" />
+        </div>
+        <div className="relative mx-auto max-w-6xl px-4 py-24 text-center sm:px-6 lg:px-8">
+          <Reveal>
+            <h2 className="mx-auto max-w-2xl text-[34px] font-bold leading-[1.12] tracking-[-0.04em] text-white">
+              Own a fleet? List it here.
+            </h2>
+            <p className="mx-auto mt-5 max-w-lg text-[15px] leading-relaxed text-white/55">
+              Join hundreds of verified providers reaching thousands of renters across Pakistan.
+              Listing is free — you only ever talk to renters who are ready to book.
+            </p>
+            <Link
+              href="/register?role=PROVIDER"
+              className="bg-brand shadow-coral ease-spring hover:shadow-coral-lg mt-9 inline-flex h-[52px] items-center rounded-control px-8 text-[15px] font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+            >
+              Get started as a provider
+            </Link>
+          </Reveal>
         </div>
       </section>
 
       {/* ── Footer ────────────────────────────────────────────────────── */}
-      <footer className="border-t border-slate-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-white font-bold text-xs">R</span>
-            </div>
-            <span className="font-semibold text-slate-600">RentalMarket</span>
+      <footer className="border-t border-border-subtle bg-surface">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-5 px-4 py-10 text-xs text-text-faint sm:flex-row sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2.5">
+            <span className="bg-brand flex h-7 w-7 items-center justify-center rounded-chip text-xs font-bold text-white">
+              R
+            </span>
+            <span className="text-[13px] font-semibold text-ink">RentalMarket</span>
           </div>
-          <p>© {new Date().getFullYear()} Rental Marketplace. All rights reserved.</p>
-          <div className="flex gap-4">
-            <Link href="/vehicles" className="hover:text-slate-600">Browse</Link>
-            <Link href="/register" className="hover:text-slate-600">Register</Link>
-            <Link href="/login" className="hover:text-slate-600">Sign in</Link>
+          <p>&copy; {new Date().getFullYear()} Rental Marketplace. All rights reserved.</p>
+          <div className="flex gap-5">
+            <Link href="/vehicles" className="transition-colors hover:text-brand-700">
+              Browse
+            </Link>
+            <Link href="/providers" className="transition-colors hover:text-brand-700">
+              Providers
+            </Link>
+            <Link href="/trips" className="transition-colors hover:text-brand-700">
+              Trips
+            </Link>
+            <Link href="/login" className="transition-colors hover:text-brand-700">
+              Sign in
+            </Link>
           </div>
         </div>
       </footer>

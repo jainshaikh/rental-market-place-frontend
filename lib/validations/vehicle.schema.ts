@@ -31,11 +31,9 @@ export const vehicleSchema = z.object({
     .min(1)
     .optional()
     .or(z.literal(0).transform(() => undefined)),
-  locationText: z.string().max(200).optional().or(z.literal('')),
   availabilityNotes: z.string().max(500).optional().or(z.literal('')),
   pricingNotes: z.string().max(500).optional().or(z.literal('')),
   specialConditions: z.string().max(1000).optional().or(z.literal('')),
-  showroomId: z.string().optional().or(z.literal('')),
   features: z.array(z.string().max(80)).optional(),
 });
 

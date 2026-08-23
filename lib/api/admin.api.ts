@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { ApiResponse } from '../../types/api.types';
+import type { ApiResponse, Market } from '../../types/api.types';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -62,6 +62,41 @@ export interface AdminProviderSummary {
   _count: { vehicles: number };
 }
 
+export interface AdminProviderShowroom {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  area?: string | null;
+  contactNumber: string;
+  whatsappNumber?: string | null;
+  operatingHours?: Record<string, string> | null;
+  mapLat?: number | null;
+  mapLng?: number | null;
+}
+
+// The real GET /admin/providers/:id payload — full showrooms (not the
+// city/contactNumber-only projection the pending list gets), bookingRequests
+// count, and documents guaranteed present (not optional like on AdminUserVehicle).
+export interface AdminProviderDetail {
+  id: string;
+  userId: string;
+  businessName: string;
+  slug: string;
+  businessDescription?: string | null;
+  logoUrl?: string | null;
+  bannerUrl?: string | null;
+  verificationStatus: string;
+  isFeatured: boolean;
+  rejectionReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user: { id: string; name: string; email: string; phone?: string | null; createdAt: string };
+  showrooms: AdminProviderShowroom[];
+  documents: Array<{ id: string; documentType: string; fileUrl: string; status: string; rejectionReason?: string | null }>;
+  _count: { vehicles: number; bookingRequests: number };
+}
+
 export interface AdminVehicleSummary {
   id: string;
   title: string;
@@ -74,7 +109,7 @@ export interface AdminVehicleSummary {
   createdAt: string;
   updatedAt: string;
   providerProfile: { id: string; businessName: string; verificationStatus?: string };
-  showroom?: { city: string } | null;
+  showroom?: { city: string; country: Market } | null;
   images: Array<{ url: string; altText?: string | null }>;
 }
 
@@ -103,7 +138,7 @@ export interface AdminVehicleDetail {
   updatedAt: string;
   images: Array<{ id: string; url: string; altText?: string | null; sortOrder: number; width?: number | null; height?: number | null }>;
   features: Array<{ id: string; name: string; value?: string | null }>;
-  showroom: { id: string; name: string; city: string; area?: string | null; contactNumber: string } | null;
+  showroom: { id: string; name: string; city: string; area?: string | null; contactNumber: string; country: Market } | null;
   providerProfile: {
     id: string;
     businessName: string;
@@ -131,7 +166,7 @@ export interface AdminTripDetail {
   createdAt: string;
   updatedAt: string;
   postedBy: { id: string; name: string; email: string; phone?: string | null };
-  userVehicle: { id: string; make: string; model: string; year?: number | null; color?: string | null; plateNumber: string; status: string };
+  userVehicle: { id: string; make: string; model: string; year?: number | null; color?: string | null; plateNumber: string; status: string; country: Market };
 }
 
 export interface AdminUserVehicle {
@@ -187,7 +222,7 @@ export const adminApi = {
       .get<PagedResponse<AdminProviderSummary>>('/admin/providers/pending', { params: { page, limit } })
       .then((r) => r.data),
   getProviderDetail: (id: string) =>
-    apiClient.get<ApiResponse<AdminProviderSummary>>(`/admin/providers/${id}`).then((r) => r.data.data),
+    apiClient.get<ApiResponse<AdminProviderDetail>>(`/admin/providers/${id}`).then((r) => r.data.data),
   approveProvider: (id: string, note?: string) =>
     apiClient.patch<ApiResponse<AdminProviderSummary>>(`/admin/providers/${id}/approve`, { note }).then((r) => r.data.data),
   rejectProvider: (id: string, reason: string) =>

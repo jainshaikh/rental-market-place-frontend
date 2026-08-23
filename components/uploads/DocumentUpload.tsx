@@ -3,7 +3,6 @@
 import { useRef, useState } from 'react';
 import { useUpload } from '../../hooks/useUpload';
 import { DOCUMENT_TYPES } from '../../lib/api/media.api';
-import { StatusBadge } from '../common/StatusBadge';
 import { cn } from '../../lib/utils/cn';
 import type { UploadedDocument } from '../../lib/api/providers.api';
 
@@ -50,13 +49,9 @@ export function DocumentUpload({ existingDocuments, onUploaded, className }: Doc
                   <p className="text-sm font-medium text-slate-800 truncate">
                     {DOCUMENT_TYPES.find((t) => t.value === doc.documentType)?.label ?? doc.documentType}
                   </p>
-                  {doc.rejectionReason && (
-                    <p className="text-xs text-destructive mt-0.5">{doc.rejectionReason}</p>
-                  )}
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
-                <StatusBadge status={doc.status} size="sm" />
                 <a
                   href={doc.fileUrl}
                   target="_blank"

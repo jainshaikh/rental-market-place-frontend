@@ -1,5 +1,6 @@
-import { Role, UserStatus, ProviderStatus, VehicleStatus, BookingRequestStatus, Transmission, FuelType } from './enums';
+import { Role, UserStatus, ProviderStatus, VehicleStatus, BookingRequestStatus, Transmission, FuelType, Market } from './enums';
 export type { Transmission, FuelType };
+export { Market };
 
 // ─── API Response Envelope ──────────────────────────────────────────────────
 
@@ -86,6 +87,7 @@ export interface Showroom {
   operatingHours: Record<string, string> | null;
   mapLat: number | null;
   mapLng: number | null;
+  country: Market;
 }
 
 // ─── Vehicle ────────────────────────────────────────────────────────────────
@@ -134,7 +136,7 @@ export interface ProviderVehicle {
   showroomId: string | null;
   images: VehicleImageFull[];
   features: VehicleFeature[];
-  showroom: { id: string; name: string; city: string; area: string | null; contactNumber: string } | null;
+  showroom: { id: string; name: string; city: string; area: string | null; contactNumber: string; country: Market } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -159,6 +161,7 @@ export interface VehicleCard {
   };
   showroom: {
     city: string;
+    country: Market;
   } | null;
 }
 

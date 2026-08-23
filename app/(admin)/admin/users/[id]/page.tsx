@@ -2,89 +2,43 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import {
-  useAdminUserDetail,
-  useSuspendUser,
-  useActivateUser,
-} from '../../../../../hooks/useAdmin';
-import { cn } from '../../../../../lib/utils/cn';
-
-const STATUS_CHIP: Record<string, string> = {
-  ACTIVE: 'bg-green-100 text-green-700',
-  PENDING_VERIFICATION: 'bg-amber-100 text-amber-700',
-  SUSPENDED: 'bg-red-100 text-red-700',
-};
-
-const ROLE_CHIP: Record<string, string> = {
-  USER: 'bg-slate-100 text-slate-600',
-  PROVIDER: 'bg-blue-100 text-blue-700',
-  ADMIN: 'bg-purple-100 text-purple-700',
-  SUPER_ADMIN: 'bg-purple-200 text-purple-900',
-};
-
-const PROVIDER_STATUS_CHIP: Record<string, string> = {
-  PENDING: 'bg-slate-100 text-slate-600',
-  PENDING_REVIEW: 'bg-amber-100 text-amber-700',
-  APPROVED: 'bg-green-100 text-green-700',
-  REJECTED: 'bg-red-100 text-red-700',
-  SUSPENDED: 'bg-red-100 text-red-700',
-};
-
-const DOC_STATUS_CHIP: Record<string, string> = {
-  PENDING: 'bg-amber-100 text-amber-700',
-  APPROVED: 'bg-green-100 text-green-700',
-  REJECTED: 'bg-red-100 text-red-700',
-};
+import { useParams, useRouter } from 'next/navigation';
+import { ChevronRight, ExternalLink } from 'lucide-react';
+import { useAdminUserDetail, useSuspendUser, useActivateUser } from '../../../../../hooks/useAdmin';
+import { StatusBadge } from '../../../../../components/common/StatusBadge';
+import { AdminPageHeader, AdminStat, RoleBadge } from '../../../../../components/admin';
+import { Avatar, Button, Card, ConfirmDialog, ErrorState } from '../../../../../components/ui';
 
 type ModalType = 'suspend' | 'activate' | null;
 
 export default function AdminUserDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
   const { data: user, isLoading, isError } = useAdminUserDetail(id);
   const suspend = useSuspendUser();
   const activate = useActivateUser();
-
   const [modal, setModal] = useState<ModalType>(null);
-  const [reasonInput, setReasonInput] = useState('');
 
   const isPending = suspend.isPending || activate.isPending;
 
-  const openModal = (type: 'suspend' | 'activate') => {
-    setReasonInput('');
-    setModal(type);
-  };
-
-  const handleConfirm = async () => {
-    if (!modal || !user) return;
-    if (modal === 'suspend') {
-      if (!reasonInput.trim()) return;
-      await suspend.mutateAsync({ id: user.id, reason: reasonInput });
-    } else {
-      await activate.mutateAsync(user.id);
-    }
-    setModal(null);
-  };
-
   if (isLoading) {
     return (
-      <div className="animate-pulse space-y-5">
-        <div className="h-4 bg-slate-100 rounded w-24" />
-        <div className="h-24 bg-white rounded-xl border border-slate-200" />
-        <div className="h-40 bg-white rounded-xl border border-slate-200" />
+      <div className="space-y-5">
+        <div className="h-4 w-32 animate-pulse rounded-chip bg-surface-hover" />
+        <div className="h-[168px] animate-pulse rounded-card border border-border-subtle bg-surface" />
+        <div className="h-[104px] animate-pulse rounded-card border border-border-subtle bg-surface" />
       </div>
     );
   }
 
   if (isError || !user) {
     return (
-      <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
-        <p className="text-slate-600 font-medium">User not found</p>
-        <Link href="/admin/users" className="text-sm text-primary hover:underline mt-2 inline-block">
-          Back to users
-        </Link>
-      </div>
+      <ErrorState
+        title="User not found"
+        description="This account may have been removed, or the link is wrong."
+        onBack={() => router.push('/admin/users')}
+      />
     );
   }
 
@@ -92,103 +46,112 @@ export default function AdminUserDetailPage() {
 
   return (
     <div className="space-y-5">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-slate-400">
-        <Link href="/admin/users" className="hover:text-slate-600">Users</Link>
-        <span>/</span>
-        <span className="truncate text-slate-700">{user.name}</span>
+      <nav className="flex items-center gap-1.5 text-sm text-text-faint">
+        <Link href="/admin/users" className="transition-colors hover:text-brand-700">
+          Users
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5" />
+        <span className="truncate font-medium text-ink">{user.name}</span>
       </nav>
 
-      {/* Header card */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold text-slate-900">{user.name}</h1>
-              <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', ROLE_CHIP[user.role] ?? 'bg-slate-100 text-slate-600')}>
-                {user.role}
-              </span>
-              <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', STATUS_CHIP[user.status] ?? 'bg-slate-100 text-slate-600')}>
-                {user.status.replace('_', ' ')}
-              </span>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
-              <span>{user.email}</span>
-              {user.phone && <span>{user.phone}</span>}
-              <span>{user.emailVerified ? 'Email verified' : 'Email not verified'}</span>
-              <span>Joined {new Date(user.createdAt).toLocaleDateString('en-AE', { dateStyle: 'medium' })}</span>
+      {/* Header */}
+      <Card padding="lg">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div className="flex min-w-0 items-start gap-4">
+            <Avatar name={user.name} size="lg" tone="ink" />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-2xl font-bold tracking-[-0.035em] text-ink">{user.name}</h1>
+                <RoleBadge role={user.role} />
+                <StatusBadge status={user.status} size="sm" />
+              </div>
+              <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-text-muted">
+                <span>{user.email}</span>
+                {user.phone && <span className="font-mono">{user.phone}</span>}
+                <span
+                  className={user.emailVerified ? 'text-status-emerald-fg' : 'text-status-amber-fg'}
+                >
+                  {user.emailVerified ? 'Email verified' : 'Email not verified'}
+                </span>
+                <span>
+                  Joined{' '}
+                  {new Date(user.createdAt).toLocaleDateString('en-PK', { dateStyle: 'medium' })}
+                </span>
+              </div>
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex-shrink-0">
             {user.status === 'SUSPENDED' ? (
-              <button
-                onClick={() => openModal('activate')}
-                className="text-sm font-semibold px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-              >
-                Activate user
-              </button>
+              <Button onClick={() => setModal('activate')}>Activate user</Button>
             ) : user.role === 'USER' || user.role === 'PROVIDER' ? (
-              <button
-                onClick={() => openModal('suspend')}
-                className="text-sm font-semibold px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-              >
+              <Button variant="danger-outline" onClick={() => setModal('suspend')}>
                 Suspend user
-              </button>
+              </Button>
             ) : null}
           </div>
         </div>
-      </div>
+      </Card>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {provider ? (
           <>
-            <StatCard label="Vehicles" value={provider._count.vehicles} />
-            <StatCard label="Booking requests" value={provider._count.bookingRequests} />
-            <StatCard label="Showrooms" value={provider.showrooms.length} />
-            <StatCard label="Documents" value={provider.documents.length} />
+            <AdminStat label="Vehicles" value={provider._count.vehicles} />
+            <AdminStat label="Booking requests" value={provider._count.bookingRequests} />
+            <AdminStat label="Showrooms" value={provider.showrooms.length} />
+            <AdminStat label="Documents" value={provider.documents.length} />
           </>
         ) : (
           <>
-            <StatCard label="Booking requests" value={user._count.bookingRequests} />
-            <StatCard label="Saved vehicles" value={user._count.savedVehicles} />
+            <AdminStat label="Booking requests" value={user._count.bookingRequests} />
+            <AdminStat label="Saved vehicles" value={user._count.savedVehicles} />
           </>
         )}
       </div>
 
-      {/* Provider profile detail */}
+      {/* Provider profile */}
       {provider && (
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+        <Card padding="lg">
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">{provider.businessName}</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-ink">
+                {provider.businessName}
+              </h2>
               {provider.businessDescription && (
-                <p className="text-sm text-slate-500 mt-1">{provider.businessDescription}</p>
+                <p className="mt-1 max-w-[62ch] text-sm leading-relaxed text-text-muted">
+                  {provider.businessDescription}
+                </p>
               )}
             </div>
-            <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', PROVIDER_STATUS_CHIP[provider.verificationStatus] ?? 'bg-slate-100 text-slate-600')}>
-              {provider.verificationStatus.replace('_', ' ')}
-            </span>
+            <StatusBadge status={provider.verificationStatus} size="sm" />
           </div>
 
           {provider.rejectionReason && (
-            <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">
-              Rejection reason: {provider.rejectionReason}
+            <p className="mb-5 rounded-control border border-status-red-border bg-status-red-bg px-3.5 py-2.5 text-xs text-status-red-fg">
+              <b className="font-semibold">Rejection reason:</b> {provider.rejectionReason}
             </p>
           )}
 
-          <div className="grid sm:grid-cols-2 gap-6">
+          <div className="grid gap-7 border-t border-border-subtle pt-5 sm:grid-cols-2">
             <div>
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Showrooms</h3>
+              <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.07em] text-text-faint">
+                Showrooms
+              </h3>
               {provider.showrooms.length === 0 ? (
-                <p className="text-sm text-slate-400">None added</p>
+                <p className="text-sm text-text-faint">None added</p>
               ) : (
-                <ul className="space-y-2">
+                <ul className="space-y-2.5">
                   {provider.showrooms.map((s) => (
-                    <li key={s.id} className="text-sm text-slate-600">
-                      <span className="font-medium text-slate-800">{s.name}</span> — {s.city}
-                      {s.contactNumber && <span className="text-slate-400"> · {s.contactNumber}</span>}
+                    <li key={s.id} className="text-sm text-text-muted">
+                      <span className="font-medium text-ink">{s.name}</span>
+                      <span className="capitalize"> — {s.city}</span>
+                      {s.contactNumber && (
+                        <span className="font-mono text-xs text-text-faint">
+                          {' '}
+                          · {s.contactNumber}
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -196,84 +159,55 @@ export default function AdminUserDetailPage() {
             </div>
 
             <div>
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Documents</h3>
+              <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.07em] text-text-faint">
+                Documents
+              </h3>
               {provider.documents.length === 0 ? (
-                <p className="text-sm text-slate-400">None uploaded</p>
+                <p className="text-sm text-text-faint">None uploaded</p>
               ) : (
                 <ul className="space-y-2">
                   {provider.documents.map((d) => (
-                    <li key={d.id} className="flex items-center justify-between text-sm">
-                      <a href={d.fileUrl} target="_blank" rel="noreferrer" className="text-slate-600 hover:text-primary hover:underline">
-                        {d.documentType.replace('_', ' ')}
+                    <li key={d.id} className="flex items-center justify-between gap-3">
+                      <a
+                        href={d.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-ink-soft group inline-flex items-center gap-1.5 text-sm capitalize transition-colors hover:text-brand-700"
+                      >
+                        {d.documentType.replace(/_/g, ' ').toLowerCase()}
+                        <ExternalLink className="h-3 w-3 flex-shrink-0 text-text-faint transition-colors group-hover:text-brand-600" />
                       </a>
-                      <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', DOC_STATUS_CHIP[d.status] ?? 'bg-slate-100 text-slate-600')}>
-                        {d.status}
-                      </span>
+                      <StatusBadge status={d.status} size="sm" />
                     </li>
                   ))}
                 </ul>
               )}
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
-      {/* Modal */}
-      {modal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-1">
-              {modal === 'suspend' ? 'Suspend user' : 'Activate user'}
-            </h2>
-            <p className="text-sm text-slate-500 mb-4">
-              <strong>{user.name}</strong> ({user.email})
-            </p>
-
-            {modal === 'suspend' && (
-              <div className="mb-4">
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
-                  Reason <span className="text-red-400">*</span>
-                </label>
-                <textarea
-                  rows={3}
-                  value={reasonInput}
-                  onChange={(e) => setReasonInput(e.target.value)}
-                  placeholder="Reason for suspension…"
-                  className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
-                />
-              </div>
-            )}
-
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setModal(null)}
-                className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirm}
-                disabled={isPending || (modal === 'suspend' && !reasonInput.trim())}
-                className={cn(
-                  'px-4 py-2 text-sm font-semibold rounded-lg text-white disabled:opacity-60',
-                  modal === 'suspend' ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600',
-                )}
-              >
-                {isPending ? 'Saving…' : modal === 'suspend' ? 'Suspend' : 'Activate'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
-      <p className="text-2xl font-bold text-slate-900">{value.toLocaleString()}</p>
-      <p className="text-xs text-slate-500 mt-0.5">{label}</p>
+      <ConfirmDialog
+        open={!!modal}
+        onOpenChange={(open) => !open && setModal(null)}
+        title={modal === 'suspend' ? 'Suspend user?' : 'Activate user?'}
+        description={`${user.name} (${user.email})`}
+        requireReason={modal === 'suspend'}
+        reasonLabel="Reason for suspension"
+        confirmLabel={modal === 'suspend' ? 'Suspend user' : 'Activate user'}
+        cancelLabel="Cancel"
+        destructive={modal === 'suspend'}
+        loading={isPending}
+        onConfirm={async (reason) => {
+          if (modal === 'suspend') {
+            if (!reason) return;
+            await suspend.mutateAsync({ id: user.id, reason });
+          } else {
+            await activate.mutateAsync(user.id);
+          }
+          setModal(null);
+        }}
+      />
     </div>
   );
 }

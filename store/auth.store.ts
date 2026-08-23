@@ -10,6 +10,7 @@ interface AuthState {
 
   // Actions
   setAuth: (user: AuthUser, accessToken: string) => void;
+  setUser: (user: AuthUser) => void;
   clearAuth: () => void;
   setLoading: (loading: boolean) => void;
 }
@@ -26,6 +27,9 @@ export const useAuthStore = create<AuthState>()(
         setAccessToken(accessToken);
         set({ user, isAuthenticated: true, isLoading: false });
       },
+
+      // Patches the cached user (e.g. after refetching /users/me) without touching the token
+      setUser: (user) => set({ user }),
 
       clearAuth: () => {
         setAccessToken(null);

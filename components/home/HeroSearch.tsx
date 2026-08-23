@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { Search, ChevronDown } from 'lucide-react';
 
 interface HeroSearchProps {
   cities: string[];
@@ -23,30 +24,29 @@ export function HeroSearch({ cities }: HeroSearchProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col sm:flex-row gap-2 max-w-xl bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-2"
+      className="flex max-w-xl flex-col gap-2 rounded-sheet border border-white/15 bg-white/[0.07] p-2 backdrop-blur-md transition-colors duration-200 focus-within:border-white/30 sm:flex-row"
     >
       {/* Search input */}
-      <div className="flex items-center gap-2 flex-1 bg-white rounded-xl px-4 py-2.5">
-        <svg className="h-4 w-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
+      <div className="flex flex-1 items-center gap-2.5 rounded-media bg-surface px-4">
+        <Search className="h-4 w-4 flex-shrink-0 text-text-faint" />
         <input
           type="text"
           placeholder="Make, model, or keyword…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 text-sm text-slate-800 placeholder-slate-400 focus:outline-none bg-transparent"
+          className="h-11 flex-1 bg-transparent text-sm text-ink placeholder-text-faint focus:outline-none"
         />
       </div>
 
-      {/* City select */}
+      {/* City select — native select, custom chevron. appearance-none removes the
+          platform arrow so the icon can inherit our palette. */}
       {cities.length > 0 && (
-        <div className="bg-white rounded-xl px-3 py-2.5 flex-shrink-0">
+        <div className="relative flex-shrink-0 rounded-media bg-surface">
           <select
             value={city}
             onChange={(e) => setCity(e.target.value)}
-            className="text-sm text-slate-700 focus:outline-none bg-transparent"
+            aria-label="City"
+            className="text-ink-soft h-11 w-full appearance-none bg-transparent pl-4 pr-10 text-sm font-medium focus:outline-none sm:w-auto"
           >
             <option value="">All cities</option>
             {cities.map((c) => (
@@ -55,13 +55,14 @@ export function HeroSearch({ cities }: HeroSearchProps) {
               </option>
             ))}
           </select>
+          <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-faint" />
         </div>
       )}
 
       {/* Submit */}
       <button
         type="submit"
-        className="bg-primary text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors flex-shrink-0"
+        className="bg-brand shadow-coral ease-spring hover:shadow-coral-lg h-11 flex-shrink-0 rounded-media px-6 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
       >
         Search
       </button>

@@ -10,6 +10,7 @@ import { useAuth } from '../../../../../hooks/useAuth';
 import { useCreateTripInquiry } from '../../../../../hooks/useTripInquiries';
 import { useQuery } from '@tanstack/react-query';
 import { tripsApi } from '../../../../../lib/api/trips.api';
+import { getCurrencyCode } from '../../../../../lib/utils/currency';
 import {
   createTripInquirySchema,
   type CreateTripInquiryFormValues,
@@ -205,13 +206,13 @@ export default function TripInquirePage() {
 
             <div className="space-y-2 border-t border-border-subtle pt-3 text-sm">
               <div className="flex justify-between font-mono text-slate-600">
-                <span>PKR {Number(trip.pricePerSeat).toLocaleString()} / seat</span>
+                <span>{getCurrencyCode(trip.userVehicle?.country)} {Number(trip.pricePerSeat).toLocaleString()} / seat</span>
               </div>
               <div className="flex justify-between font-mono font-semibold text-ink">
                 <span className="font-sans">
                   {requestedSeats} seat{requestedSeats !== 1 ? 's' : ''}
                 </span>
-                <span>PKR {(Number(trip.pricePerSeat) * requestedSeats).toLocaleString()} est.</span>
+                <span>{getCurrencyCode(trip.userVehicle?.country)} {(Number(trip.pricePerSeat) * requestedSeats).toLocaleString()} est.</span>
               </div>
             </div>
 

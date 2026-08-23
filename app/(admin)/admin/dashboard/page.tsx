@@ -1,7 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { ArrowRight, FileClock, Settings, Store, Users } from 'lucide-react';
 import { useAdminOverview } from '../../../../hooks/useAdmin';
+import { AdminPageHeader, AdminStat } from '../../../../components/admin';
+import { cn } from '../../../../lib/utils/cn';
 
 export default function AdminDashboardPage() {
   const { data, isLoading } = useAdminOverview();
@@ -18,77 +21,105 @@ export default function AdminDashboardPage() {
       label: 'Provider approvals',
       count: data?.pendingProviders,
       href: '/admin/providers',
-      urgent: (data?.pendingProviders ?? 0) > 0,
       description: 'Applications awaiting review',
     },
     {
       label: 'Vehicle approvals',
       count: data?.pendingVehicles,
       href: '/admin/vehicles',
-      urgent: (data?.pendingVehicles ?? 0) > 0,
       description: 'Listings awaiting review',
     },
   ];
 
+  const quickLinks = [
+    { label: 'Audit Logs', href: '/admin/audit-logs', icon: FileClock },
+    { label: 'Platform Settings', href: '/admin/settings', icon: Settings },
+    { label: 'All Users', href: '/admin/users', icon: Users },
+    { label: 'Providers', href: '/admin/providers', icon: Store },
+  ];
+
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-1">Admin Overview</h1>
-      <p className="text-slate-500 text-sm mb-8">Platform health and moderation queues.</p>
+    <div className="space-y-8">
+      <AdminPageHeader
+        eyebrow="Admin"
+        title="Overview"
+        subtitle="Platform health and moderation queues."
+      />
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {stats.map((stat) => {
-          const card = (
-            <div className="bg-white rounded-xl border border-slate-200 p-5 hover:border-slate-300 transition-colors">
-              <p className="text-sm text-slate-500">{stat.label}</p>
-              <p className="text-3xl font-bold text-slate-900 mt-1">
-                {isLoading ? '—' : (stat.value ?? 0).toLocaleString()}
-              </p>
-            </div>
-          );
-          return stat.href ? (
-            <Link key={stat.label} href={stat.href}>{card}</Link>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {stats.map((stat) =>
+          stat.href ? (
+            <Link
+              key={stat.label}
+              href={stat.href}
+              className="rounded-card transition-all duration-200 ease-spring hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
+            >
+              <AdminStat label={stat.label} value={stat.value} loading={isLoading} />
+            </Link>
           ) : (
-            <div key={stat.label}>{card}</div>
-          );
-        })}
+            <AdminStat key={stat.label} label={stat.label} value={stat.value} loading={isLoading} />
+          ),
+        )}
       </div>
 
       {/* Approval queues */}
-      <h2 className="text-base font-semibold text-slate-800 mb-3">Pending approvals</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-        {queues.map((q) => (
-          <Link key={q.label} href={q.href}>
-            <div className="bg-white rounded-xl border border-slate-200 p-5 hover:border-slate-300 transition-colors flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-slate-800">{q.label}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{q.description}</p>
-              </div>
-              <div className={`text-2xl font-bold ${q.urgent ? 'text-amber-600' : 'text-slate-400'}`}>
-                {isLoading ? '—' : q.count ?? 0}
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
+      <section>
+        <h2 className="mb-3.5 text-[15px] font-semibold text-ink">Pending approvals</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {queues.map((q) => {
+            const urgent = (q.count ?? 0) > 0;
+            return (
+              <Link
+                key={q.label}
+                href={q.href}
+                className={cn(
+                  'group flex items-center justify-between gap-4 rounded-card border bg-surface p-5 shadow-xs',
+                  'transition-all duration-200 ease-spring hover:-translate-y-1 hover:shadow-md',
+                  // A non-zero queue is the one thing on this page that wants
+                  // attention, so it gets the warm border and tinted count.
+                  urgent
+                    ? 'border-status-amber-border hover:border-status-amber-dot'
+                    : 'border-border-subtle hover:border-brand-100',
+                )}
+              >
+                <div>
+                  <p className="text-sm font-semibold text-ink">{q.label}</p>
+                  <p className="mt-0.5 text-xs text-text-faint">{q.description}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span
+                    className={cn(
+                      'font-mono text-2xl font-semibold tracking-[-0.03em]',
+                      urgent ? 'text-status-amber-fg' : 'text-text-faint',
+                    )}
+                  >
+                    {isLoading ? '—' : (q.count ?? 0)}
+                  </span>
+                  <ArrowRight className="h-4 w-4 text-text-faint transition-transform duration-200 group-hover:translate-x-1 group-hover:text-brand-600" />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Quick links */}
-      <h2 className="text-base font-semibold text-slate-800 mb-3">Quick links</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {[
-          { label: 'Audit Logs', href: '/admin/audit-logs' },
-          { label: 'Platform Settings', href: '/admin/settings' },
-          { label: 'All Users', href: '/admin/users' },
-        ].map((link) => (
-          <Link
-            key={link.label}
-            href={link.href}
-            className="bg-white rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 hover:border-primary/40 hover:text-primary transition-colors"
-          >
-            {link.label} →
-          </Link>
-        ))}
-      </div>
+      <section>
+        <h2 className="mb-3.5 text-[15px] font-semibold text-ink">Quick links</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {quickLinks.map(({ label, href, icon: Icon }) => (
+            <Link
+              key={label}
+              href={href}
+              className="text-ink-soft group flex items-center gap-2.5 rounded-card border border-border-subtle bg-surface px-4 py-3.5 text-sm font-medium shadow-xs transition-all duration-200 ease-spring hover:-translate-y-1 hover:border-brand-100 hover:text-brand-700 hover:shadow-sm"
+            >
+              <Icon className="h-4 w-4 flex-shrink-0 text-text-faint transition-colors group-hover:text-brand-600" />
+              <span className="truncate">{label}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

@@ -10,7 +10,11 @@ import { useAuth } from '../../../../../hooks/useAuth';
 import { useCreateBooking } from '../../../../../hooks/useBookings';
 import { useQuery } from '@tanstack/react-query';
 import { listingsApi } from '../../../../../lib/api/listings.api';
-import { createBookingSchema, type CreateBookingFormValues } from '../../../../../lib/validations/booking.schema';
+import { getCurrencyCode } from '../../../../../lib/utils/currency';
+import {
+  createBookingSchema,
+  type CreateBookingFormValues,
+} from '../../../../../lib/validations/booking.schema';
 import { Button, Card, Input, Textarea } from '../../../../../components/ui';
 
 export default function InquirePage() {
@@ -85,8 +89,8 @@ export default function InquirePage() {
         </div>
         <h1 className="mb-2 text-2xl font-bold text-ink">Inquiry sent!</h1>
         <p className="mb-6 text-text-muted">
-          The provider for <strong className="font-semibold text-ink">{vehicle.title}</strong> has been notified and
-          will be in touch with you soon.
+          The provider for <strong className="font-semibold text-ink">{vehicle.title}</strong> has
+          been notified and will be in touch with you soon.
         </p>
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Link href="/dashboard/inquiries">
@@ -105,10 +109,19 @@ export default function InquirePage() {
   const toDate = watch('requestedToDate');
   const days =
     fromDate && toDate
-      ? Math.max(0, Math.ceil((new Date(toDate).getTime() - new Date(fromDate).getTime()) / (1000 * 60 * 60 * 24)))
+      ? Math.max(
+          0,
+          Math.ceil(
+            (new Date(toDate).getTime() - new Date(fromDate).getTime()) / (1000 * 60 * 60 * 24),
+          ),
+        )
       : 0;
 
-  const today = new Date().toISOString().split('T')[0];
+  // datetime-local inputs need "YYYY-MM-DDTHH:mm" in local time, not UTC —
+  // toISOString() would shift by the timezone offset and let past times through.
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
@@ -118,7 +131,10 @@ export default function InquirePage() {
           Vehicles
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-border-strong" />
-        <Link href={`/vehicles/${params.slug}`} className="max-w-[160px] truncate hover:text-slate-700">
+        <Link
+          href={`/vehicles/${params.slug}`}
+          className="max-w-[160px] truncate hover:text-slate-700"
+        >
           {vehicle.title}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-border-strong" />
@@ -138,15 +154,15 @@ export default function InquirePage() {
 
             <div className="grid grid-cols-2 gap-3">
               <Input
-                type="date"
-                label="Pick-up date"
+                type="datetime-local"
+                label="Pick-up date & time"
                 min={today}
                 error={errors.requestedFromDate?.message}
                 {...register('requestedFromDate')}
               />
               <Input
-                type="date"
-                label="Return date"
+                type="datetime-local"
+                label="Return date & time"
                 min={fromDate || today}
                 error={errors.requestedToDate?.message}
                 {...register('requestedToDate')}
@@ -170,12 +186,17 @@ export default function InquirePage() {
 
             {createBooking.error && (
               <div className="rounded-control border border-status-red-border bg-status-red-bg px-4 py-3 text-sm text-status-red-fg">
-                {(createBooking.error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-                  'Something went wrong. Please try again.'}
+                {(createBooking.error as { response?: { data?: { message?: string } } })?.response
+                  ?.data?.message ?? 'Something went wrong. Please try again.'}
               </div>
             )}
 
-            <Button type="submit" size="lg" className="w-full" loading={isSubmitting || createBooking.isPending}>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full"
+              loading={isSubmitting || createBooking.isPending}
+            >
               Send inquiry
             </Button>
           </form>
@@ -188,7 +209,11 @@ export default function InquirePage() {
             <div className="aspect-[4/3] overflow-hidden rounded-control bg-surface-hover">
               {vehicle.images?.[0]?.url ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={vehicle.images[0].url} alt={vehicle.title} className="h-full w-full object-cover" />
+                <img
+                  src={vehicle.images[0].url}
+                  alt={vehicle.title}
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-text-faint">
                   <ImageIcon className="h-8 w-8" />
@@ -203,19 +228,21 @@ export default function InquirePage() {
 
             <div className="space-y-2 border-t border-border-subtle pt-3 text-sm">
               <div className="flex justify-between font-mono text-slate-600">
-                <span>PKR {price} / day</span>
+                <span>{getCurrencyCode(vehicle.showroom?.country)} {price} / day</span>
               </div>
               {days > 0 && (
                 <div className="flex justify-between font-mono font-semibold text-ink">
                   <span className="font-sans">
                     {days} day{days !== 1 ? 's' : ''}
                   </span>
-                  <span>PKR {(Number(vehicle.pricePerDay) * days).toLocaleString()} est.</span>
+                  <span>{getCurrencyCode(vehicle.showroom?.country)} {(Number(vehicle.pricePerDay) * days).toLocaleString()} est.</span>
                 </div>
               )}
             </div>
 
-            <p className="pt-1 text-xs text-text-faint">Estimate only — final pricing confirmed by the provider.</p>
+            <p className="pt-1 text-xs text-text-faint">
+              Estimate only — final pricing confirmed by the provider.
+            </p>
           </Card>
         </div>
       </div>

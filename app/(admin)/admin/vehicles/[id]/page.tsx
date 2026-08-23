@@ -10,6 +10,7 @@ import {
 } from '../../../../../hooks/useAdmin';
 import { StatusBadge } from '../../../../../components/common/StatusBadge';
 import { cn } from '../../../../../lib/utils/cn';
+import { getCurrencyCode } from '../../../../../lib/utils/currency';
 
 type ModalType = 'approve' | 'reject' | null;
 
@@ -127,7 +128,7 @@ export default function AdminVehicleDetailPage() {
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard label="Price/day" value={`PKR ${Number(vehicle.pricePerDay).toLocaleString()}`} />
+        <StatCard label="Price/day" value={`${getCurrencyCode(vehicle.showroom?.country)} ${Number(vehicle.pricePerDay).toLocaleString()}`} />
         <StatCard label="Views" value={vehicle.viewCount.toLocaleString()} />
         <StatCard label="Inquiries" value={vehicle.inquiryCount.toLocaleString()} />
         <StatCard label="Booking requests" value={vehicle._count.bookingRequests.toLocaleString()} />
@@ -175,7 +176,7 @@ export default function AdminVehicleDetailPage() {
         <div className="grid sm:grid-cols-3 gap-4 text-sm">
           <DetailRow label="Seating capacity" value={`${vehicle.seatingCapacity} seats`} />
           <DetailRow label="Engine" value={vehicle.engineType} />
-          <DetailRow label="Price/week" value={vehicle.pricePerWeek ? `PKR ${Number(vehicle.pricePerWeek).toLocaleString()}` : null} />
+          <DetailRow label="Price/week" value={vehicle.pricePerWeek ? `${getCurrencyCode(vehicle.showroom?.country)} ${Number(vehicle.pricePerWeek).toLocaleString()}` : null} />
           <DetailRow label="Location" value={vehicle.locationText} />
           <DetailRow label="Availability notes" value={vehicle.availabilityNotes} />
           <DetailRow label="Pricing notes" value={vehicle.pricingNotes} />

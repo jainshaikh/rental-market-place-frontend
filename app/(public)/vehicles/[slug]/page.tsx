@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { BadgeCheck, Calendar, ChevronRight, Eye, Fuel, Image as ImageIcon, MapPin, Settings2, Users } from 'lucide-react';
 import { fetchVehicleBySlug } from '../../../../lib/api/server';
 import type { ListingVehicleDetail } from '../../../../lib/api/listings.api';
+import { getCurrencyCode } from '../../../../lib/utils/currency';
 import { Button, Card, WhatsAppButton } from '../../../../components/ui';
+import { RatingSummaryBadge } from '../../../../components/common/RatingSummaryBadge';
+import { ReviewsList } from '../../../../components/common/ReviewsList';
 
 interface PageProps {
   params: { slug: string };
@@ -16,21 +19,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const v = res.data;
   const price = Number(v.pricePerDay).toLocaleString();
+  const currency = getCurrencyCode(v.showroom?.country);
   const location = v.showroom?.city ?? v.locationText ?? null;
 
   return {
-    title: `${v.title} — PKR ${price}/day | Rental Marketplace`,
+    title: `${v.title} — ${currency} ${price}/day | Rental Marketplace`,
     description: [
       v.title,
       `${v.year} · ${v.transmission} · ${v.fuelType}`,
       location ? `Available in ${location}` : null,
-      `From PKR ${price} per day`,
+      `From ${currency} ${price} per day`,
     ]
       .filter(Boolean)
       .join(' · '),
     openGraph: {
       title: v.title,
-      description: `Rent the ${v.title} for PKR ${price}/day from ${v.providerProfile.businessName}`,
+      description: `Rent the ${v.title} for ${currency} ${price}/day from ${v.providerProfile.businessName}`,
       images: v.images[0]?.url ? [{ url: v.images[0].url, alt: v.title }] : [],
     },
   };
@@ -43,6 +47,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
   const vehicle = res.data as ListingVehicleDetail;
   const price = Number(vehicle.pricePerDay).toLocaleString();
   const weekPrice = vehicle.pricePerWeek ? Number(vehicle.pricePerWeek).toLocaleString() : null;
+  const currency = getCurrencyCode(vehicle.showroom?.country);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -55,6 +60,14 @@ export default async function VehicleDetailPage({ params }: PageProps) {
         <span className="truncate font-semibold text-ink">{vehicle.title}</span>
       </nav>
 
+      {vehicle.availability === 'BOOKED' && (
+        <div className="mb-6 rounded-card border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          This vehicle is currently out on a rental.
+          {vehicle.bookedUntil &&
+            ` Available again from ${new Date(vehicle.bookedUntil).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}.`}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left column — images + details */}
         <div className="space-y-6 lg:col-span-2">
@@ -65,6 +78,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
           <div>
             <h1 className="text-[26px] font-bold leading-tight tracking-tight text-ink">{vehicle.title}</h1>
             <div className="mt-3.5 flex flex-wrap items-center gap-3.5 text-[13px] text-text-muted">
+              <RatingSummaryBadge subjectType="VEHICLE" subjectId={vehicle.id} size="sm" />
               <span className="flex items-center gap-1.5">
                 <MapPin className="h-3.5 w-3.5" />
                 {vehicle.showroom?.city ?? vehicle.locationText ?? '—'}
@@ -132,8 +146,19 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                   <BadgeCheck className="h-3.5 w-3.5" />
                   Verified provider — view all listings
                 </p>
+                <RatingSummaryBadge
+                  subjectType="PROVIDER"
+                  subjectId={vehicle.providerProfile.id}
+                  size="sm"
+                  className="mt-1"
+                />
               </div>
             </Link>
+          </Card>
+
+          {/* Reviews */}
+          <Card>
+            <ReviewsList subjectType="VEHICLE" subjectId={vehicle.id} title="Vehicle reviews" />
           </Card>
         </div>
 
@@ -143,11 +168,11 @@ export default async function VehicleDetailPage({ params }: PageProps) {
             {/* Price card */}
             <Card padding="lg" className="shadow-md">
               <div className="flex items-baseline gap-1.5">
-                <span className="font-mono text-[26px] font-semibold tracking-tight text-ink">PKR {price}</span>
+                <span className="font-mono text-[26px] font-semibold tracking-tight text-ink">{currency} {price}</span>
                 <span className="text-[13px] text-text-muted">/ day</span>
               </div>
               {weekPrice ? (
-                <p className="mt-1 text-[13px] text-text-faint">PKR {weekPrice} / week</p>
+                <p className="mt-1 text-[13px] text-text-faint">{currency} {weekPrice} / week</p>
               ) : (
                 <p className="mt-1 text-[13px] text-text-faint">Weekly and monthly rates on request.</p>
               )}

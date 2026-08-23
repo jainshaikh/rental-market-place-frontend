@@ -1,7 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { ScrollText } from 'lucide-react';
 import { useAuditLogs } from '../../../../hooks/useAdmin';
+import { ActionBadge, AdminPageHeader, AdminTableFooter } from '../../../../components/admin';
+import { Avatar, Button, EmptyState, Input, Select } from '../../../../components/ui';
 import { cn } from '../../../../lib/utils/cn';
 
 const ENTITY_TYPE_OPTS = [
@@ -12,18 +15,6 @@ const ENTITY_TYPE_OPTS = [
   { value: 'BOOKING_REQUEST', label: 'Booking' },
   { value: 'PLATFORM_SETTING', label: 'Setting' },
 ];
-
-const ACTION_COLORS: Record<string, string> = {
-  PROVIDER_APPROVED: 'bg-green-100 text-green-700',
-  PROVIDER_REJECTED: 'bg-red-100 text-red-700',
-  VEHICLE_APPROVED: 'bg-green-100 text-green-700',
-  VEHICLE_REJECTED: 'bg-red-100 text-red-700',
-  USER_SUSPENDED: 'bg-red-100 text-red-700',
-  USER_ACTIVATED: 'bg-green-100 text-green-700',
-  BOOKING_STATUS_CHANGED: 'bg-blue-100 text-blue-700',
-  SETTINGS_UPDATED: 'bg-amber-100 text-amber-700',
-  ADMIN_LOGIN: 'bg-slate-100 text-slate-600',
-};
 
 export default function AuditLogsPage() {
   const [page, setPage] = useState(1);
@@ -39,11 +30,7 @@ export default function AuditLogsPage() {
 
   const logs = data?.data ?? [];
   const meta = data?.meta;
-
-  const applyEntityId = () => {
-    setEntityId(entityIdInput.trim());
-    setPage(1);
-  };
+  const hasFilters = !!entityType || !!entityId;
 
   const clearFilters = () => {
     setEntityType('');
@@ -52,85 +39,109 @@ export default function AuditLogsPage() {
     setPage(1);
   };
 
-  const hasFilters = !!entityType || !!entityId;
-
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Audit Logs</h1>
-        <p className="text-slate-500 text-sm mt-1">Append-only record of all admin actions.</p>
-      </div>
+    <div className="space-y-5">
+      <AdminPageHeader title="Audit Logs" subtitle="Append-only record of all admin actions." />
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-5 items-end">
-        <select
+      <div className="flex flex-wrap items-center gap-3">
+        <Select
           value={entityType}
-          onChange={(e) => { setEntityType(e.target.value); setPage(1); }}
-          className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          onChange={(e) => {
+            setEntityType(e.target.value);
+            setPage(1);
+          }}
+          className="w-auto"
+          aria-label="Filter by entity type"
         >
-          {ENTITY_TYPE_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+          {ENTITY_TYPE_OPTS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </Select>
 
-        <div className="flex gap-2">
-          <input
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setEntityId(entityIdInput.trim());
+            setPage(1);
+          }}
+          className="flex gap-2"
+        >
+          <Input
             type="text"
             placeholder="Entity ID…"
             value={entityIdInput}
             onChange={(e) => setEntityIdInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && applyEntityId()}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/50 w-52"
+            className="w-52 font-mono text-xs"
           />
-          <button
-            onClick={applyEntityId}
-            className="text-sm px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-          >
+          <Button type="submit" variant="secondary">
             Filter
-          </button>
-        </div>
+          </Button>
+        </form>
 
         {hasFilters && (
-          <button onClick={clearFilters} className="text-sm text-slate-400 hover:text-slate-700">
+          <Button variant="ghost" onClick={clearFilters}>
             Clear
-          </button>
+          </Button>
         )}
 
         {meta && (
-          <p className="text-xs text-slate-400 ml-auto self-center">
+          <p className="ml-auto font-mono text-xs text-text-faint">
             {meta.total.toLocaleString()} entries
           </p>
         )}
       </div>
 
-      {/* Log entries */}
-      <div className={cn('bg-white rounded-xl border border-slate-200 overflow-hidden', isFetching && 'opacity-70 transition-opacity')}>
-        {logs.length === 0 && !isFetching ? (
-          <div className="text-center py-12 text-slate-400 text-sm">No log entries found</div>
-        ) : (
-          <div className="divide-y divide-slate-100">
+      {/* Entries */}
+      {logs.length === 0 && !isFetching ? (
+        <EmptyState
+          icon={ScrollText}
+          title="No log entries"
+          description={
+            hasFilters
+              ? 'Nothing matches these filters yet.'
+              : 'Admin actions will appear here as they happen.'
+          }
+          action={
+            hasFilters
+              ? { label: 'Clear filters', onClick: clearFilters, variant: 'secondary' }
+              : undefined
+          }
+        />
+      ) : (
+        <div
+          className={cn(
+            'overflow-hidden rounded-card border border-border-subtle bg-surface shadow-xs',
+            isFetching && 'opacity-70 transition-opacity',
+          )}
+        >
+          <div className="divide-y divide-border-subtle">
             {logs.map((log) => (
-              <div key={log.id} className="px-5 py-4 flex gap-4 items-start hover:bg-slate-50 transition-colors">
-                {/* Action badge */}
+              <div
+                key={log.id}
+                className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-surface-hover"
+              >
                 <div className="flex-shrink-0 pt-0.5">
-                  <span className={cn(
-                    'text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap',
-                    ACTION_COLORS[log.actionType] ?? 'bg-slate-100 text-slate-600',
-                  )}>
-                    {log.actionType.replace(/_/g, ' ')}
-                  </span>
+                  <ActionBadge action={log.actionType} />
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-3 flex-wrap">
-                    <span className="text-sm font-medium text-slate-800">
-                      {log.adminUser.name}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                    <span className="flex items-center gap-2">
+                      <Avatar name={log.adminUser.name} size="sm" tone="ink" />
+                      <span className="text-sm font-medium text-ink">{log.adminUser.name}</span>
                     </span>
-                    <span className="text-xs text-slate-400">{log.adminUser.email}</span>
-                    <span className="text-xs text-slate-300">·</span>
-                    <span className="text-xs text-slate-500 font-mono">{log.entityType}/{log.entityId.slice(0, 12)}…</span>
+                    <span className="text-xs text-text-faint">{log.adminUser.email}</span>
                   </div>
 
+                  <p className="mt-1.5 font-mono text-xs text-text-muted">
+                    {log.entityType}/{log.entityId.slice(0, 12)}…
+                  </p>
+
                   {log.metadata && Object.keys(log.metadata).length > 0 && (
-                    <p className="text-xs text-slate-500 mt-1 truncate">
+                    <p className="mt-1 truncate text-xs text-text-muted">
                       {Object.entries(log.metadata)
                         .filter(([, v]) => v != null && v !== '')
                         .map(([k, v]) => `${k}: ${v}`)
@@ -139,40 +150,32 @@ export default function AuditLogsPage() {
                   )}
 
                   {log.ipAddress && (
-                    <p className="text-xs text-slate-400 mt-0.5">IP: {log.ipAddress}</p>
+                    <p className="mt-0.5 font-mono text-[11px] text-text-faint">
+                      IP {log.ipAddress}
+                    </p>
                   )}
                 </div>
 
-                <div className="flex-shrink-0 text-xs text-slate-400 whitespace-nowrap pt-0.5">
-                  {new Date(log.createdAt).toLocaleString('en-AE', {
+                <time className="flex-shrink-0 whitespace-nowrap pt-0.5 font-mono text-xs text-text-faint">
+                  {new Date(log.createdAt).toLocaleString('en-PK', {
                     dateStyle: 'medium',
                     timeStyle: 'short',
                   })}
-                </div>
+                </time>
               </div>
             ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Pagination */}
-        {meta && meta.totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100">
-            <p className="text-xs text-slate-400">
-              Page {page} of {meta.totalPages}
-            </p>
-            <div className="flex gap-2">
-              <button onClick={() => setPage((n) => n - 1)} disabled={page <= 1}
-                className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
-                Previous
-              </button>
-              <button onClick={() => setPage((n) => n + 1)} disabled={page >= meta.totalPages}
-                className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
-                Next
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      {meta && (
+        <AdminTableFooter
+          page={page}
+          totalPages={meta.totalPages}
+          total={meta.total}
+          onPageChange={setPage}
+        />
+      )}
     </div>
   );
 }

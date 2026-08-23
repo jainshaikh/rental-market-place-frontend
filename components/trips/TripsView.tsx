@@ -72,40 +72,66 @@ export function TripsView({ initialData, cities }: TripsViewProps) {
   const totalPages = meta?.totalPages ?? 1;
   const currentPage = filters.page ?? 1;
 
-  const hasActiveFilters = !!(filters.originCity || filters.destinationCity || filters.date || filters.minSeats);
+  const hasActiveFilters = !!(
+    filters.originCity ||
+    filters.destinationCity ||
+    filters.date ||
+    filters.minSeats
+  );
 
   const clearFilters = () => router.push(pathname, { scroll: false });
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-6">
-      {/* Filter sidebar — desktop */}
+      {/* Filter sidebar — desktop. Sticky below the 68px navbar. */}
       <aside className="hidden w-[236px] flex-shrink-0 lg:block">
-        <FilterPanel
-          filters={filters}
-          cities={cities}
-          onUpdate={updateFilter}
-          hasActiveFilters={hasActiveFilters}
-          onClear={clearFilters}
-        />
+        <div className="sticky top-[92px]">
+          <FilterPanel
+            filters={filters}
+            cities={cities}
+            onUpdate={updateFilter}
+            hasActiveFilters={hasActiveFilters}
+            onClear={clearFilters}
+          />
+        </div>
       </aside>
 
       {/* Main content */}
       <div className="min-w-0 flex-1">
         {/* Toolbar */}
-        <div className="mb-3.5 flex items-center justify-between gap-3">
+        <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Button variant="secondary" size="sm" onClick={() => setShowFilters(!showFilters)} className="lg:hidden">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className="lg:hidden"
+            >
               <SlidersHorizontal className="h-3.5 w-3.5" />
               Filters
               {hasActiveFilters && <span className="h-1.5 w-1.5 rounded-full bg-brand-600" />}
             </Button>
 
             <p className="text-sm text-text-muted">
-              {isFetching ? 'Loading…' : meta ? <>{meta.total.toLocaleString()} trip{meta.total !== 1 ? 's' : ''}</> : ''}
+              {isFetching && !meta ? (
+                'Loading…'
+              ) : meta ? (
+                <>
+                  <b className="font-mono font-semibold text-ink">{meta.total.toLocaleString()}</b>{' '}
+                  trip{meta.total !== 1 ? 's' : ''}
+                </>
+              ) : (
+                ''
+              )}
             </p>
           </div>
 
-          <Select value={filters.sort ?? 'departure_asc'} onChange={(e) => updateFilter('sort', e.target.value)} className="w-auto">
+          <Select
+            value={filters.sort ?? 'departure_asc'}
+            onChange={(e) => updateFilter('sort', e.target.value)}
+            className="w-auto"
+            aria-label="Sort trips"
+          >
             {SORT_OPTS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -116,7 +142,7 @@ export function TripsView({ initialData, cities }: TripsViewProps) {
 
         {/* Mobile filter drawer */}
         {showFilters && (
-          <Card className="mb-3.5 lg:hidden">
+          <Card className="mb-4 lg:hidden">
             <FilterPanel
               filters={filters}
               cities={cities}
@@ -129,7 +155,7 @@ export function TripsView({ initialData, cities }: TripsViewProps) {
 
         {/* Grid */}
         {isFetching && trips.length === 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <TripCardSkeleton key={i} />
             ))}
@@ -139,13 +165,17 @@ export function TripsView({ initialData, cities }: TripsViewProps) {
             icon={SearchX}
             title="No trips found"
             description="Try a different city, date, or clear your filters."
-            action={hasActiveFilters ? { label: 'Clear all filters', onClick: clearFilters, variant: 'secondary' } : undefined}
+            action={
+              hasActiveFilters
+                ? { label: 'Clear all filters', onClick: clearFilters, variant: 'secondary' }
+                : undefined
+            }
           />
         ) : (
           <>
             <div
               className={cn(
-                'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3',
+                'grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3',
                 isFetching && 'pointer-events-none opacity-70 transition-opacity',
               )}
             >
@@ -154,7 +184,12 @@ export function TripsView({ initialData, cities }: TripsViewProps) {
               ))}
             </div>
 
-            <Pagination page={currentPage} totalPages={totalPages} onPageChange={(p) => updateFilter('page', p)} className="mt-7" />
+            <Pagination
+              page={currentPage}
+              totalPages={totalPages}
+              onPageChange={(p) => updateFilter('page', p)}
+              className="mt-8"
+            />
           </>
         )}
       </div>
@@ -172,11 +207,14 @@ interface FilterPanelProps {
 
 function FilterPanel({ filters, cities, onUpdate, hasActiveFilters, onClear }: FilterPanelProps) {
   return (
-    <Card className="space-y-[18px]">
+    <Card className="space-y-[18px] bg-page">
       <div className="flex items-center justify-between">
         <p className="text-[13px] font-semibold text-ink">Filters</p>
         {hasActiveFilters && (
-          <button onClick={onClear} className="text-xs font-semibold text-brand-600 hover:underline">
+          <button
+            onClick={onClear}
+            className="text-xs font-semibold text-brand-700 transition-colors hover:text-brand-800"
+          >
             Reset
           </button>
         )}

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAdminTripDetail, useSuspendTrip, useReactivateTrip } from '../../../../../hooks/useAdmin';
 import { StatusBadge } from '../../../../../components/common/StatusBadge';
+import { getCurrencyCode } from '../../../../../lib/utils/currency';
 
 export default function AdminTripDetailPage() {
   const params = useParams();
@@ -89,7 +90,7 @@ export default function AdminTripDetailPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard label="Seats available" value={trip.availableSeats} />
-        <StatCard label="Price/seat" value={`PKR ${Number(trip.pricePerSeat).toLocaleString()}`} />
+        <StatCard label="Price/seat" value={`${getCurrencyCode(trip.userVehicle?.country)} ${Number(trip.pricePerSeat).toLocaleString()}`} />
         <StatCard label="Posted" value={new Date(trip.createdAt).toLocaleDateString('en-AE', { dateStyle: 'medium' })} />
         <StatCard label="Contact" value={trip.contactNumber} />
       </div>

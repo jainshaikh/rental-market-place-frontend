@@ -1,17 +1,49 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
+import { Plus, SlidersHorizontal, X } from 'lucide-react';
 import { usePlatformSettings, useUpsertSetting } from '../../../../hooks/useAdmin';
 import type { PlatformSetting } from '../../../../lib/api/admin.api';
+import { AdminPageHeader } from '../../../../components/admin';
+import { Button, Card, EmptyState, Input } from '../../../../components/ui';
 import { cn } from '../../../../lib/utils/cn';
 
-// Seed defaults — shown in the "Add setting" form as quick picks
 const PRESET_KEYS = [
-  { key: 'platform.maintenance_mode', value: false, description: 'Put the platform in maintenance mode' },
-  { key: 'platform.max_vehicles_per_provider', value: 50, description: 'Maximum vehicles a provider can list' },
-  { key: 'platform.inquiry_expiry_days', value: 30, description: 'Days before an unanswered inquiry expires' },
-  { key: 'platform.featured_listings_count', value: 6, description: 'Number of featured vehicles on homepage' },
+  {
+    key: 'platform.maintenance_mode',
+    value: false,
+    description: 'Put the platform in maintenance mode',
+  },
+  {
+    key: 'platform.max_vehicles_per_provider',
+    value: 50,
+    description: 'Maximum vehicles a provider can list',
+  },
+  {
+    key: 'platform.inquiry_expiry_days',
+    value: 30,
+    description: 'Days before an unanswered inquiry expires',
+  },
+  {
+    key: 'platform.featured_listings_count',
+    value: 6,
+    description: 'Number of featured vehicles on homepage',
+  },
 ];
+
+/** Parses the JSON value field, surfacing failures as a toast instead of a
+ * blocking window.alert() (which the old page used in two places). */
+function parseJsonValue(raw: string): { ok: true; value: unknown } | { ok: false } {
+  try {
+    return { ok: true, value: JSON.parse(raw) };
+  } catch {
+    toast.error('Value must be valid JSON', {
+      description: 'e.g. true, 42, "text", or {"key":"value"}',
+    });
+    return { ok: false };
+  }
+}
 
 export default function AdminSettingsPage() {
   const { data: settings, isLoading } = usePlatformSettings();
@@ -19,199 +51,211 @@ export default function AdminSettingsPage() {
 
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
-
+  const [showAdd, setShowAdd] = useState(false);
   const [newKey, setNewKey] = useState('');
   const [newValue, setNewValue] = useState('');
   const [newDesc, setNewDesc] = useState('');
-  const [showAdd, setShowAdd] = useState(false);
-
-  const startEdit = (setting: PlatformSetting) => {
-    setEditingKey(setting.key);
-    setEditValue(JSON.stringify(setting.value));
-  };
 
   const saveEdit = async (setting: PlatformSetting) => {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(editValue);
-    } catch {
-      alert('Value must be valid JSON (e.g. true, 42, "text", or {"key":"value"})');
-      return;
-    }
-    await upsert.mutateAsync({ key: setting.key, value: parsed, description: setting.description ?? undefined });
+    const parsed = parseJsonValue(editValue);
+    if (!parsed.ok) return;
+    await upsert.mutateAsync({
+      key: setting.key,
+      value: parsed.value,
+      description: setting.description ?? undefined,
+    });
+    toast.success(`Updated ${setting.key}`);
     setEditingKey(null);
-  };
-
-  const handleAddPreset = (preset: typeof PRESET_KEYS[0]) => {
-    setNewKey(preset.key);
-    setNewValue(JSON.stringify(preset.value));
-    setNewDesc(preset.description);
-    setShowAdd(true);
   };
 
   const saveNew = async () => {
     if (!newKey.trim()) return;
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(newValue);
-    } catch {
-      alert('Value must be valid JSON');
-      return;
-    }
-    await upsert.mutateAsync({ key: newKey.trim(), value: parsed, description: newDesc || undefined });
+    const parsed = parseJsonValue(newValue);
+    if (!parsed.ok) return;
+    await upsert.mutateAsync({
+      key: newKey.trim(),
+      value: parsed.value,
+      description: newDesc || undefined,
+    });
+    toast.success(`Added ${newKey.trim()}`);
     setNewKey('');
     setNewValue('');
     setNewDesc('');
     setShowAdd(false);
   };
 
+  const unusedPresets = PRESET_KEYS.filter((p) => !settings?.some((s) => s.key === p.key));
+
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Platform Settings</h1>
-          <p className="text-slate-500 text-sm mt-1">Key-value configuration store.</p>
-        </div>
-        <button
-          onClick={() => setShowAdd((v) => !v)}
-          className="text-sm font-semibold px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-        >
-          {showAdd ? 'Cancel' : '+ Add setting'}
-        </button>
-      </div>
+    <div className="space-y-5">
+      <AdminPageHeader
+        title="Platform Settings"
+        subtitle="Key-value configuration store."
+        actions={
+          <Button variant={showAdd ? 'secondary' : 'primary'} onClick={() => setShowAdd((v) => !v)}>
+            {showAdd ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            {showAdd ? 'Cancel' : 'Add setting'}
+          </Button>
+        }
+      />
 
-      {/* Add setting form */}
+      {/* Add form */}
       {showAdd && (
-        <div className="bg-white rounded-xl border border-slate-200 p-5 mb-5">
-          <h2 className="text-sm font-semibold text-slate-800 mb-3">New setting</h2>
+        <Card>
+          <h2 className="mb-4 text-sm font-semibold text-ink">New setting</h2>
 
-          {/* Preset keys */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {PRESET_KEYS.filter((p) => !settings?.some((s) => s.key === p.key)).map((p) => (
-              <button
-                key={p.key}
-                onClick={() => handleAddPreset(p)}
-                className="text-xs px-2.5 py-1 rounded-full border border-slate-200 text-slate-600 hover:border-primary hover:text-primary transition-colors"
-              >
-                {p.key}
-              </button>
-            ))}
-          </div>
+          {unusedPresets.length > 0 && (
+            <div className="mb-4">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.07em] text-text-faint">
+                Start from a preset
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {unusedPresets.map((p) => (
+                  <button
+                    key={p.key}
+                    onClick={() => {
+                      setNewKey(p.key);
+                      setNewValue(JSON.stringify(p.value));
+                      setNewDesc(p.description);
+                    }}
+                    className="rounded-full border border-border-subtle bg-surface px-3 py-1.5 font-mono text-[11px] text-text-muted transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-600 hover:text-brand-700"
+                  >
+                    {p.key}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-            <input
-              type="text"
-              placeholder="Key (e.g. platform.feature_x)"
+          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Input
+              label="Key"
+              placeholder="platform.feature_x"
               value={newKey}
               onChange={(e) => setNewKey(e.target.value)}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="font-mono text-xs"
             />
-            <input
-              type="text"
-              placeholder='Value (JSON: true, 42, "text")'
+            <Input
+              label="Value"
+              helper="JSON"
+              placeholder='true, 42, "text"'
               value={newValue}
               onChange={(e) => setNewValue(e.target.value)}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="font-mono text-xs"
             />
-            <input
-              type="text"
-              placeholder="Description (optional)"
+            <Input
+              label="Description"
+              placeholder="Optional"
               value={newDesc}
               onChange={(e) => setNewDesc(e.target.value)}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
-          <button
+
+          <Button
             onClick={saveNew}
-            disabled={!newKey.trim() || !newValue.trim() || upsert.isPending}
-            className="text-sm font-semibold px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-60 transition-colors"
+            disabled={!newKey.trim() || !newValue.trim()}
+            loading={upsert.isPending}
           >
-            {upsert.isPending ? 'Saving…' : 'Save setting'}
-          </button>
-        </div>
+            Save setting
+          </Button>
+        </Card>
       )}
 
-      {/* Settings table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        {isLoading ? (
-          <div className="divide-y divide-slate-100">
+      {/* Settings list */}
+      {isLoading ? (
+        <div className="overflow-hidden rounded-card border border-border-subtle bg-surface">
+          <div className="divide-y divide-border-subtle">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="px-5 py-4 animate-pulse flex gap-4">
-                <div className="h-4 bg-slate-100 rounded w-56" />
-                <div className="h-4 bg-slate-100 rounded w-24" />
-                <div className="h-4 bg-slate-100 rounded flex-1" />
+              <div key={i} className="px-5 py-4">
+                <div className="h-4 w-64 animate-pulse rounded-chip bg-page" />
               </div>
             ))}
           </div>
-        ) : !settings || settings.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 text-sm">
-            No settings yet. Add one above or click a preset.
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {settings.map((s) => (
-              <div key={s.key} className="px-5 py-4 hover:bg-slate-50 transition-colors">
-                {editingKey === s.key ? (
-                  <div className="flex gap-3 items-start flex-wrap">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-mono font-semibold text-slate-800 mb-1">{s.key}</p>
-                      <input
-                        type="text"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        className="w-full text-sm border border-primary/50 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/50"
-                      />
-                    </div>
-                    <div className="flex gap-2 pt-6">
-                      <button
-                        onClick={() => saveEdit(s)}
-                        disabled={upsert.isPending}
-                        className="text-xs font-semibold px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-60"
-                      >
-                        {upsert.isPending ? 'Saving…' : 'Save'}
-                      </button>
-                      <button
-                        onClick={() => setEditingKey(null)}
-                        className="text-xs font-semibold px-3 py-1.5 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <span className="text-sm font-mono font-semibold text-slate-800">{s.key}</span>
-                        <span className={cn(
-                          'text-xs font-semibold px-2 py-0.5 rounded-full',
-                          typeof s.value === 'boolean'
-                            ? s.value ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
-                            : 'bg-blue-100 text-blue-700',
-                        )}>
-                          {JSON.stringify(s.value)}
-                        </span>
+        </div>
+      ) : !settings || settings.length === 0 ? (
+        <EmptyState
+          icon={SlidersHorizontal}
+          title="No settings yet"
+          description="Add a key-value pair, or start from one of the presets."
+          action={!showAdd ? { label: 'Add setting', onClick: () => setShowAdd(true) } : undefined}
+        />
+      ) : (
+        <div className="overflow-hidden rounded-card border border-border-subtle bg-surface shadow-xs">
+          <div className="divide-y divide-border-subtle">
+            {settings.map((s) => {
+              const editing = editingKey === s.key;
+              const isBool = typeof s.value === 'boolean';
+
+              return (
+                <div key={s.key} className="px-5 py-4 transition-colors hover:bg-surface-hover">
+                  {editing ? (
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="mb-1.5 font-mono text-sm font-semibold text-ink">{s.key}</p>
+                        <Input
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          className="font-mono text-xs"
+                          autoFocus
+                        />
                       </div>
-                      {s.description && (
-                        <p className="text-xs text-slate-400 mt-0.5">{s.description}</p>
-                      )}
-                      <p className="text-xs text-slate-300 mt-0.5">
-                        Updated {new Date(s.updatedAt).toLocaleDateString('en-AE', { dateStyle: 'medium' })}
-                      </p>
+                      <div className="flex gap-2">
+                        <Button size="sm" loading={upsert.isPending} onClick={() => saveEdit(s)}>
+                          Save
+                        </Button>
+                        <Button size="sm" variant="secondary" onClick={() => setEditingKey(null)}>
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => startEdit(s)}
-                      className="text-xs font-semibold text-primary hover:underline flex-shrink-0"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+                  ) : (
+                    <div className="flex items-start gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className="font-mono text-sm font-semibold text-ink">{s.key}</span>
+                          {/* Boolean true/false reads as on/off, so it keeps the
+                              emerald/slate split; other types are neutral blue. */}
+                          <span
+                            className={cn(
+                              'rounded-full border px-[9px] py-[3px] font-mono text-[11px] font-semibold',
+                              isBool
+                                ? s.value
+                                  ? 'border-status-emerald-border bg-status-emerald-bg text-status-emerald-fg'
+                                  : 'border-status-slate-border bg-status-slate-bg text-status-slate-fg'
+                                : 'border-status-blue-border bg-status-blue-bg text-status-blue-fg',
+                            )}
+                          >
+                            {JSON.stringify(s.value)}
+                          </span>
+                        </div>
+                        {s.description && (
+                          <p className="mt-1 text-xs text-text-muted">{s.description}</p>
+                        )}
+                        <p className="mt-1 font-mono text-[11px] text-text-faint">
+                          Updated{' '}
+                          {new Date(s.updatedAt).toLocaleDateString('en-PK', {
+                            dateStyle: 'medium',
+                          })}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditingKey(s.key);
+                          setEditValue(JSON.stringify(s.value));
+                        }}
+                      >
+                        Edit
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

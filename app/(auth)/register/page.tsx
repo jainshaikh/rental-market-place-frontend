@@ -132,7 +132,7 @@ export default function RegisterPage() {
             />
             <Input
               label="Phone"
-              helper={!errors.phone ? 'Optional' : undefined}
+              required
               type="tel"
               autoComplete="tel"
               placeholder="+92 300 1234567"

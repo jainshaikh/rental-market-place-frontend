@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { ApiResponse, PaginationMeta } from '../../types/api.types';
+import type { ApiResponse, PaginationMeta, Market } from '../../types/api.types';
 
 export type TripStatus = 'PENDING_REVIEW' | 'ACTIVE' | 'REJECTED' | 'CANCELLED' | 'COMPLETED' | 'SUSPENDED';
 
@@ -14,6 +14,7 @@ export interface TripVehicle {
   model: string;
   year: number | null;
   color: string | null;
+  country: Market;
   // Card responses include only the cover (sortOrder 0); detail includes the full gallery.
   images: TripVehicleImage[];
 }

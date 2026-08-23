@@ -20,6 +20,7 @@ import {
   COMMON_FEATURES,
 } from '../../../../../../lib/validations/vehicle.schema';
 import { cn } from '../../../../../../lib/utils/cn';
+import { getCurrencyCode } from '../../../../../../lib/utils/currency';
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -48,6 +49,7 @@ export default function EditVehiclePage() {
   const updateVehicle = useUpdateVehicle(vehicleId);
   const submitForReview = useSubmitVehicleForReview(vehicleId);
 
+  const currency = getCurrencyCode(vehicle?.showroom?.country ?? profile?.showrooms?.[0]?.country);
   const isEditable = vehicle?.status === 'DRAFT' || vehicle?.status === 'REJECTED';
   const canSubmit = vehicle?.status === 'DRAFT' && (vehicle?.images?.length ?? 0) > 0;
 
@@ -75,11 +77,9 @@ export default function EditVehiclePage() {
         engineType: vehicle.engineType ?? '',
         pricePerDay: Number(vehicle.pricePerDay),
         pricePerWeek: vehicle.pricePerWeek ? Number(vehicle.pricePerWeek) : undefined,
-        locationText: vehicle.locationText ?? '',
         availabilityNotes: vehicle.availabilityNotes ?? '',
         pricingNotes: vehicle.pricingNotes ?? '',
         specialConditions: vehicle.specialConditions ?? '',
-        showroomId: vehicle.showroomId ?? '',
         features: vehicle.features?.map((f) => f.name) ?? [],
       });
     }
@@ -100,15 +100,16 @@ export default function EditVehiclePage() {
     }
   };
 
+  const showroom = profile?.showrooms?.[0];
+
   const onSubmit = async (values: VehicleFormValues) => {
     await updateVehicle.mutateAsync({
       ...values,
       engineType: values.engineType || undefined,
-      locationText: values.locationText || undefined,
       availabilityNotes: values.availabilityNotes || undefined,
       pricingNotes: values.pricingNotes || undefined,
       specialConditions: values.specialConditions || undefined,
-      showroomId: values.showroomId || undefined,
+      showroomId: showroom?.id,
       pricePerWeek: values.pricePerWeek ?? undefined,
     });
   };
@@ -275,7 +276,7 @@ export default function EditVehiclePage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label required>Price per day (PKR)</Label>
+                <Label required>Price per day ({currency})</Label>
                 <input
                   type="number"
                   step="0.01"
@@ -285,7 +286,7 @@ export default function EditVehiclePage() {
                 <FieldError message={errors.pricePerDay?.message} />
               </div>
               <div>
-                <Label>Price per week (PKR)</Label>
+                <Label>Price per week ({currency})</Label>
                 <input
                   type="number"
                   step="0.01"
@@ -309,28 +310,25 @@ export default function EditVehiclePage() {
           <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5">
             <p className="text-sm font-semibold text-slate-800">Location & details</p>
 
-            {profile?.showrooms && profile.showrooms.length > 0 && (
+            {showroom ? (
               <div>
-                <Label>Showroom</Label>
-                <select {...register('showroomId')} className={inputCls}>
-                  <option value="">No specific showroom</option>
-                  {profile.showrooms.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} — {s.city}
-                    </option>
-                  ))}
-                </select>
+                <Label>Location</Label>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5">
+                  <p className="text-sm font-medium text-slate-800">{showroom.name}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {showroom.address}, {showroom.area ? `${showroom.area}, ` : ''}
+                    {showroom.city.charAt(0).toUpperCase() + showroom.city.slice(1)}
+                  </p>
+                </div>
+                <p className="mt-1 text-xs text-slate-400">
+                  This vehicle will be listed at your showroom address.
+                </p>
               </div>
+            ) : (
+              <p className="text-xs text-amber-600">
+                No showroom on file — add one in your profile so this vehicle has a listed location.
+              </p>
             )}
-
-            <div>
-              <Label>Location text</Label>
-              <input
-                {...register('locationText')}
-                placeholder="e.g. Dubai Marina"
-                className={inputCls}
-              />
-            </div>
 
             <div>
               <Label>Availability notes</Label>
@@ -408,12 +406,12 @@ export default function EditVehiclePage() {
               { label: 'Seats', value: vehicle.seatingCapacity },
               {
                 label: 'Price / day',
-                value: `PKR ${Number(vehicle.pricePerDay).toLocaleString()}`,
+                value: `${currency} ${Number(vehicle.pricePerDay).toLocaleString()}`,
               },
               {
                 label: 'Price / week',
                 value: vehicle.pricePerWeek
-                  ? `PKR ${Number(vehicle.pricePerWeek).toLocaleString()}`
+                  ? `${currency} ${Number(vehicle.pricePerWeek).toLocaleString()}`
                   : '—',
               },
             ].map(({ label, value }) => (

@@ -20,7 +20,14 @@ interface DocumentUploadFieldProps {
   entityId?: string; // groups this upload into the owning vehicle's S3 folder
 }
 
-export function DocumentUploadField({ label, hint, value, onChange, error, entityId }: DocumentUploadFieldProps) {
+export function DocumentUploadField({
+  label,
+  hint,
+  value,
+  onChange,
+  error,
+  entityId,
+}: DocumentUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { uploading, progress, error: uploadError, upload, reset } = useUpload('trip_document');
 
@@ -41,7 +48,9 @@ export function DocumentUploadField({ label, hint, value, onChange, error, entit
 
   return (
     <div>
-      <label className="mb-1.5 block text-[13px] font-semibold text-slate-700">
+      {/* text-ink-soft to match Input's FieldWrapper label — this was the one
+          raw slate-700 left in the trips folder. */}
+      <label className="text-ink-soft mb-1.5 block text-[13px] font-semibold">
         {label}
         <span className="ml-0.5 text-red-600">*</span>
       </label>
@@ -53,7 +62,11 @@ export function DocumentUploadField({ label, hint, value, onChange, error, entit
             <Check className="h-4 w-4 flex-shrink-0" />
             Uploaded
           </span>
-          <button type="button" onClick={() => onChange(null)} className="text-xs font-semibold text-text-muted hover:text-red-600">
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="text-xs font-semibold text-text-muted transition-colors hover:text-red-600"
+          >
             Replace
           </button>
         </div>
@@ -61,7 +74,11 @@ export function DocumentUploadField({ label, hint, value, onChange, error, entit
         <div className="flex items-center gap-3 rounded-control border border-status-red-border bg-status-red-bg px-3.5 py-2.5">
           <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-600" />
           <span className="flex-1 text-xs text-status-red-fg">{uploadError}</span>
-          <button type="button" onClick={retry} className="flex-shrink-0 rounded-chip border border-status-red-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-status-red-fg hover:bg-surface-hover">
+          <button
+            type="button"
+            onClick={retry}
+            className="flex-shrink-0 rounded-chip border border-status-red-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-status-red-fg transition-colors hover:bg-surface-hover"
+          >
             Retry
           </button>
         </div>
@@ -71,7 +88,9 @@ export function DocumentUploadField({ label, hint, value, onChange, error, entit
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
           className={cn(
-            'flex w-full items-center justify-center gap-2 rounded-control border-2 border-dashed px-3 py-3.5 text-sm text-text-muted transition-colors hover:border-brand-600 hover:bg-brand-50 hover:text-brand-600 disabled:opacity-60',
+            'flex w-full items-center justify-center gap-2 rounded-control border-2 border-dashed px-3 py-3.5 text-sm text-text-muted',
+            'ease-spring transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-600 hover:bg-brand-50 hover:text-brand-700',
+            'disabled:translate-y-0 disabled:opacity-60',
             error ? 'border-red-600' : 'border-border-strong',
           )}
         >
@@ -91,7 +110,13 @@ export function DocumentUploadField({ label, hint, value, onChange, error, entit
 
       {error && <p className="mt-1.5 text-xs text-red-700">{error}</p>}
 
-      <input ref={inputRef} type="file" accept="image/jpeg,image/png,application/pdf" onChange={handleFileChange} className="sr-only" />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,application/pdf"
+        onChange={handleFileChange}
+        className="sr-only"
+      />
     </div>
   );
 }

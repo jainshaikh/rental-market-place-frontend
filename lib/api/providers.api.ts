@@ -12,7 +12,6 @@ export interface UpdateProviderPayload {
   businessName?: string;
   businessDescription?: string;
   logoUrl?: string;
-  bannerUrl?: string;
 }
 
 export interface CreateShowroomPayload {
@@ -38,6 +37,7 @@ export interface ProviderProfileWithMeta extends ProviderProfile {
   showrooms: Showroom[];
   documents: UploadedDocument[];
   completenessScore: CompletenessScore;
+  emailVerified: boolean;
 }
 
 export interface UploadedDocument {

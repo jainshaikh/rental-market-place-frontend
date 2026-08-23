@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useMyBookings, useUpdateBookingStatus } from '../../../../hooks/useBookings';
 import type { BookingRequest, BookingStatus } from '../../../../lib/api/bookings.api';
 import { cn } from '../../../../lib/utils/cn';
+import { getCurrencyCode } from '../../../../lib/utils/currency';
+import { WhatsAppButton } from '../../../../components/ui';
 
 const STATUS_META: Record<BookingStatus, { label: string; color: string }> = {
   PENDING: { label: 'Awaiting response', color: 'bg-amber-100 text-amber-700' },
@@ -147,11 +149,13 @@ export default function UserInquiriesPage() {
 
 function UserInquiryCard({ inquiry, onCancel }: { inquiry: BookingRequest; onCancel: () => void }) {
   const meta = STATUS_META[inquiry.status];
-  const fromDate = new Date(inquiry.requestedFromDate).toLocaleDateString('en-AE', {
+  const fromDate = new Date(inquiry.requestedFromDate).toLocaleString('en-AE', {
     dateStyle: 'medium',
+    timeStyle: 'short',
   });
-  const toDate = new Date(inquiry.requestedToDate).toLocaleDateString('en-AE', {
+  const toDate = new Date(inquiry.requestedToDate).toLocaleString('en-AE', {
     dateStyle: 'medium',
+    timeStyle: 'short',
   });
   const days = Math.max(
     0,
@@ -200,6 +204,12 @@ function UserInquiryCard({ inquiry, onCancel }: { inquiry: BookingRequest; onCan
               <p className="mt-0.5 text-xs text-slate-500">
                 {inquiry.providerProfile.businessName}
               </p>
+              {inquiry.providerProfile.user.phone && (
+                <div className="mt-1.5 flex items-center gap-3">
+                  <span className="text-xs text-slate-500">{inquiry.providerProfile.user.phone}</span>
+                  <WhatsAppButton phone={inquiry.providerProfile.user.phone} variant="text" label="WhatsApp provider" />
+                </div>
+              )}
             </div>
             <span className={cn('rounded-full px-2.5 py-1 text-xs font-semibold', meta.color)}>
               {meta.label}
@@ -207,7 +217,7 @@ function UserInquiryCard({ inquiry, onCancel }: { inquiry: BookingRequest; onCan
           </div>
 
           <div className="mt-2 text-xs text-slate-500">
-            {fromDate} → {toDate} · {days} day{days !== 1 ? 's' : ''} · PKR{' '}
+            {fromDate} → {toDate} · {days} day{days !== 1 ? 's' : ''} · {getCurrencyCode(inquiry.vehicle.showroom?.country)}{' '}
             {(Number(inquiry.vehicle.pricePerDay) * days).toLocaleString()} est.
           </div>
 

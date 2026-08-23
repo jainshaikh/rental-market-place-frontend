@@ -1,9 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { Plus, Route } from 'lucide-react';
 import { useMyTrips, useCancelTrip } from '../../hooks/useTrips';
 import { StatusBadge } from '../common/StatusBadge';
+import { buttonVariants, Card, ConfirmDialog, EmptyState } from '../ui';
+import { getCurrencyCode } from '../../lib/utils/currency';
 
 interface MyTripsListProps {
   basePath: string; // e.g. '/dashboard/trips'
@@ -11,6 +15,7 @@ interface MyTripsListProps {
 }
 
 export function MyTripsList({ basePath, newHref }: MyTripsListProps) {
+  const router = useRouter();
   const { data, isLoading } = useMyTrips({ limit: 50 });
   const cancelTrip = useCancelTrip();
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
@@ -20,22 +25,17 @@ export function MyTripsList({ basePath, newHref }: MyTripsListProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">My Trips</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold tracking-[-0.035em] text-ink">My Trips</h1>
+          <p className="mt-1.5 text-sm text-text-muted">
             Intercity trips you&apos;ve posted
             {meta && ` · ${meta.total} total`}
           </p>
         </div>
         {!isLoading && (
-          <Link
-            href={newHref}
-            className="flex flex-shrink-0 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+          <Link href={newHref} className={buttonVariants({ className: 'flex-shrink-0' })}>
+            <Plus className="h-4 w-4" />
             Post a trip
           </Link>
         )}
@@ -44,37 +44,33 @@ export function MyTripsList({ basePath, newHref }: MyTripsListProps) {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse rounded-xl border border-slate-200 bg-white p-4">
-              <div className="h-4 w-48 rounded bg-slate-100 mb-2" />
-              <div className="h-3 w-64 rounded bg-slate-100" />
-            </div>
+            <div
+              key={i}
+              className="h-[104px] animate-pulse rounded-card border border-border-subtle bg-surface"
+            />
           ))}
         </div>
       ) : trips.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
-          <svg className="mx-auto mb-3 h-10 w-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-              d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-          </svg>
-          <p className="font-medium text-slate-500">No trips posted yet</p>
-          <Link href={newHref} className="mt-3 inline-block text-sm font-medium text-primary hover:underline">
-            Post your first trip →
-          </Link>
-        </div>
+        <EmptyState
+          icon={Route}
+          title="No trips posted yet"
+          description="Announce a city-to-city trip and riders will contact you directly."
+          action={{ label: 'Post your first trip', onClick: () => router.push(newHref) }}
+        />
       ) : (
         <div className="space-y-3">
           {trips.map((trip) => {
             const departed = new Date(trip.departureAt) < new Date();
             return (
-              <div
+              <Card
                 key={trip.id}
-                className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300"
+                className="ease-spring flex flex-wrap items-start justify-between gap-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-100 hover:shadow-sm"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Link
                       href={`${basePath}/${trip.id}`}
-                      className="font-semibold text-slate-900 hover:text-primary hover:underline"
+                      className="font-semibold text-ink transition-colors hover:text-brand-700"
                     >
                       {trip.originCity.charAt(0).toUpperCase() + trip.originCity.slice(1)}
                       {' → '}
@@ -82,71 +78,74 @@ export function MyTripsList({ basePath, newHref }: MyTripsListProps) {
                     </Link>
                     <StatusBadge status={trip.status} size="sm" />
                     {departed && trip.status === 'ACTIVE' && (
-                      <span className="text-xs text-slate-400">(departed)</span>
+                      <span className="text-xs text-text-faint">(departed)</span>
                     )}
                   </div>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {trip.userVehicle.make} {trip.userVehicle.model} · {new Date(trip.departureAt).toLocaleString('en-AE', { dateStyle: 'medium', timeStyle: 'short' })}
+
+                  <p className="mt-1 font-mono text-xs text-text-muted">
+                    {trip.userVehicle.make} {trip.userVehicle.model} ·{' '}
+                    {new Date(trip.departureAt).toLocaleString('en-PK', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}
                   </p>
-                  <div className="mt-2 flex items-center gap-4 text-sm">
-                    <span className="font-semibold text-slate-800">
-                      PKR {Number(trip.pricePerSeat).toLocaleString()}
-                      <span className="text-xs font-normal text-slate-400">/seat</span>
+
+                  <div className="mt-2.5 flex flex-wrap items-center gap-4">
+                    <span className="font-mono text-sm font-semibold text-ink">
+                      {getCurrencyCode(trip.userVehicle?.country)} {Number(trip.pricePerSeat).toLocaleString()}
+                      <span className="ml-0.5 font-sans text-xs font-normal text-text-faint">
+                        /seat
+                      </span>
                     </span>
-                    <span className="text-xs text-slate-400">{trip.availableSeats} seats</span>
+                    <span className="text-xs text-text-faint">{trip.availableSeats} seats</span>
                   </div>
+
                   {trip.status === 'REJECTED' && trip.rejectionReason && (
-                    <p className="mt-1 text-xs text-red-500">Reason: {trip.rejectionReason}</p>
+                    <p className="mt-2 rounded-control border border-status-red-border bg-status-red-bg px-3 py-2 text-xs text-status-red-fg">
+                      Reason: {trip.rejectionReason}
+                    </p>
                   )}
                 </div>
 
-                <div className="flex flex-shrink-0 items-center gap-2">
-                  <Link href={`${basePath}/${trip.id}`} className="text-xs font-medium text-slate-500 hover:underline">
+                <div className="flex flex-shrink-0 items-center gap-3">
+                  <Link
+                    href={`${basePath}/${trip.id}`}
+                    className="text-xs font-semibold text-text-muted transition-colors hover:text-brand-700"
+                  >
                     View
                   </Link>
                   {trip.status === 'ACTIVE' && (
                     <button
                       onClick={() => setConfirmCancelId(trip.id)}
-                      className="text-xs text-slate-400 transition-colors hover:text-red-500"
+                      className="text-xs font-medium text-text-faint transition-colors hover:text-red-600"
                     >
                       Cancel
                     </button>
                   )}
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
       )}
 
-      {confirmCancelId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-slate-900">Cancel this trip?</h3>
-            <p className="mt-1 text-sm text-slate-500">
-              Riders will no longer be able to find or contact you for this trip.
-            </p>
-            <div className="mt-5 flex gap-3">
-              <button
-                onClick={() => setConfirmCancelId(null)}
-                className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                Keep it
-              </button>
-              <button
-                onClick={async () => {
-                  await cancelTrip.mutateAsync({ id: confirmCancelId });
-                  setConfirmCancelId(null);
-                }}
-                disabled={cancelTrip.isPending}
-                className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                {cancelTrip.isPending ? 'Cancelling…' : 'Cancel trip'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Was a hand-rolled fixed-overlay modal — ConfirmDialog already handles
+          focus trap, escape, and scroll lock. */}
+      <ConfirmDialog
+        open={!!confirmCancelId}
+        onOpenChange={(open) => !open && setConfirmCancelId(null)}
+        title="Cancel this trip?"
+        description="Riders will no longer be able to find or contact you for this trip."
+        confirmLabel="Cancel trip"
+        cancelLabel="Keep it"
+        destructive
+        loading={cancelTrip.isPending}
+        onConfirm={async () => {
+          if (!confirmCancelId) return;
+          await cancelTrip.mutateAsync({ id: confirmCancelId });
+          setConfirmCancelId(null);
+        }}
+      />
     </div>
   );
 }

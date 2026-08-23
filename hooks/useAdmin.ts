@@ -20,6 +20,15 @@ export function usePendingProviders(page = 1) {
   });
 }
 
+export function useAdminProviderDetail(id: string) {
+  return useQuery({
+    queryKey: ['admin', 'providers', 'detail', id],
+    queryFn: () => adminApi.getProviderDetail(id),
+    staleTime: 30_000,
+    enabled: !!id,
+  });
+}
+
 export function useApproveProvider() {
   const qc = useQueryClient();
   return useMutation({
