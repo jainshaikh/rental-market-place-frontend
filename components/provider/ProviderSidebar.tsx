@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CarFront, Car, Inbox, LayoutDashboard, LogOut, MessageSquare, Route, Star, User, type LucideIcon } from 'lucide-react';
+import { CarFront, Car, Home, Inbox, LayoutDashboard, LogOut, MessageSquare, Route, Search, Star, User, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useProviderProfile } from '../../hooks/useProviderProfile';
 import { StatusBadge } from '../common/StatusBadge';
@@ -94,6 +94,20 @@ export function ProviderSidebar() {
         <div className="px-3 py-1.5">
           <p className="truncate text-xs text-slate-500">{user?.email}</p>
         </div>
+        <Link
+          href="/"
+          className="flex items-center gap-[11px] rounded-control px-3 py-2.5 text-[13px] text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
+        >
+          <Home className="h-[17px] w-[17px]" />
+          Home
+        </Link>
+        <Link
+          href="/vehicles"
+          className="flex items-center gap-[11px] rounded-control px-3 py-2.5 text-[13px] text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
+        >
+          <Search className="h-[17px] w-[17px]" />
+          Browse vehicles
+        </Link>
         <button
           onClick={logout}
           className="flex w-full items-center gap-[11px] rounded-control px-3 py-2.5 text-[13px] text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-400"

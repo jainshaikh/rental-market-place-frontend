@@ -51,7 +51,7 @@ export function useAuth() {
     } finally {
       clearAuth();
       Cookies.remove('userRole');
-      router.push('/login');
+      router.push('/');
     }
   }, [clearAuth, router]);
 

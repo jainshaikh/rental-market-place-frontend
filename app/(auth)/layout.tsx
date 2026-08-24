@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BackButton } from '../../components/ui';
 
 export const metadata: Metadata = {
   title: {
@@ -12,13 +13,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="flex min-h-screen flex-col bg-page">
       {/* Minimal header */}
-      <header className="px-6 py-6">
+      <header className="flex items-center justify-between px-6 py-6">
         <Link href="/" className="flex w-fit items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-control bg-brand-600">
             <span className="text-sm font-bold text-white">R</span>
           </div>
           <span className="text-lg font-semibold text-ink">RentalMarket</span>
         </Link>
+        <BackButton />
       </header>
 
       {/* Content area — width is controlled per-page (login/forgot/reset/verify

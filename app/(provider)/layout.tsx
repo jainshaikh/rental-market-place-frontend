@@ -1,15 +1,22 @@
 import { ProviderSidebar } from '../../components/provider/ProviderSidebar';
+import { MobileSidebarBar } from '../../components/layout/MobileSidebarBar';
 
 export default function ProviderLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-page">
-      {/* Desktop sidebar */}
-      <div className="hidden md:flex md:flex-shrink-0">
+    <div className="min-h-screen bg-page">
+      <MobileSidebarBar brand="RentalMarket Provider">
         <ProviderSidebar />
-      </div>
+      </MobileSidebarBar>
 
-      {/* Main content */}
-      <main className="min-w-0 flex-1 overflow-y-auto p-6 md:p-8">{children}</main>
+      <div className="flex">
+        {/* Desktop sidebar — MobileSidebarBar covers the same content below md */}
+        <div className="hidden md:flex md:flex-shrink-0">
+          <ProviderSidebar />
+        </div>
+
+        {/* Main content */}
+        <main className="min-w-0 flex-1 overflow-y-auto p-6 md:p-8">{children}</main>
+      </div>
     </div>
   );
 }

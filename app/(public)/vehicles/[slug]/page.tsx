@@ -5,9 +5,10 @@ import { BadgeCheck, Calendar, ChevronRight, Eye, Fuel, Image as ImageIcon, MapP
 import { fetchVehicleBySlug } from '../../../../lib/api/server';
 import type { ListingVehicleDetail } from '../../../../lib/api/listings.api';
 import { getCurrencyCode } from '../../../../lib/utils/currency';
-import { Button, Card, WhatsAppButton } from '../../../../components/ui';
+import { Card } from '../../../../components/ui';
 import { RatingSummaryBadge } from '../../../../components/common/RatingSummaryBadge';
 import { ReviewsList } from '../../../../components/common/ReviewsList';
+import { InquiryCta } from '../../../../components/vehicles/InquiryCta';
 
 interface PageProps {
   params: { slug: string };
@@ -192,19 +193,11 @@ export default async function VehicleDetailPage({ params }: PageProps) {
 
               {/* Contact CTA */}
               <div className="mt-5 space-y-2.5">
-                <Link href={`/vehicles/${vehicle.slug}/inquire`} className="block">
-                  <Button variant="primary" size="lg" className="w-full">
-                    Send inquiry
-                  </Button>
-                </Link>
-
-                {vehicle.showroom?.whatsappNumber && (
-                  <WhatsAppButton
-                    phone={vehicle.showroom.whatsappNumber}
-                    message={`Hi, I'm interested in renting the ${vehicle.title}. Could you please share more details?`}
-                    label="Chat on WhatsApp"
-                  />
-                )}
+                <InquiryCta
+                  vehicleSlug={vehicle.slug}
+                  vehicleTitle={vehicle.title}
+                  whatsappNumber={vehicle.showroom?.whatsappNumber}
+                />
 
                 <p className="text-center text-xs text-text-faint">Free to inquire · No payment yet</p>
               </div>
