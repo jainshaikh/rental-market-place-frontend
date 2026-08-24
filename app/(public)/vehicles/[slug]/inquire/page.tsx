@@ -5,17 +5,19 @@ import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { CheckCircle2, ChevronRight, Image as ImageIcon } from 'lucide-react';
+import { CheckCircle2, ChevronRight, Image as ImageIcon, Minus, Plus } from 'lucide-react';
 import { useAuth } from '../../../../../hooks/useAuth';
 import { useCreateBooking } from '../../../../../hooks/useBookings';
 import { useQuery } from '@tanstack/react-query';
 import { listingsApi } from '../../../../../lib/api/listings.api';
 import { getCurrencyCode } from '../../../../../lib/utils/currency';
+import { getAvailableDurations, getUnitPrice, computeReturnDate } from '../../../../../lib/utils/rentalDuration';
 import {
   createBookingSchema,
   type CreateBookingFormValues,
 } from '../../../../../lib/validations/booking.schema';
 import { Button, Card, Input, Textarea } from '../../../../../components/ui';
+import { cn } from '../../../../../lib/utils/cn';
 
 export default function InquirePage() {
   const params = useParams<{ slug: string }>();
@@ -38,7 +40,7 @@ export default function InquirePage() {
     formState: { errors, isSubmitting },
   } = useForm<CreateBookingFormValues>({
     resolver: zodResolver(createBookingSchema),
-    defaultValues: { vehicleId: '' },
+    defaultValues: { vehicleId: '', durationType: 'DAY', durationQuantity: 1 },
   });
 
   useEffect(() => {
@@ -74,7 +76,8 @@ export default function InquirePage() {
     const result = await createBooking.mutateAsync({
       vehicleId: values.vehicleId,
       requestedFromDate: values.requestedFromDate,
-      requestedToDate: values.requestedToDate,
+      durationType: values.durationType,
+      durationQuantity: values.durationQuantity,
       pickupLocation: values.pickupLocation || undefined,
       message: values.message || undefined,
     });
@@ -104,18 +107,22 @@ export default function InquirePage() {
     );
   }
 
-  const price = Number(vehicle.pricePerDay).toLocaleString();
-  const fromDate = watch('requestedFromDate');
-  const toDate = watch('requestedToDate');
-  const days =
-    fromDate && toDate
-      ? Math.max(
-          0,
-          Math.ceil(
-            (new Date(toDate).getTime() - new Date(fromDate).getTime()) / (1000 * 60 * 60 * 24),
-          ),
-        )
-      : 0;
+  const currency = getCurrencyCode(vehicle.showroom?.country);
+  const availableDurations = getAvailableDurations(vehicle);
+  const durationType = watch('durationType');
+  const durationQuantity = watch('durationQuantity') || 1;
+  const unitPrice = getUnitPrice(vehicle, durationType);
+  const total = unitPrice !== null ? unitPrice * durationQuantity : null;
+  const fromDateValue = watch('requestedFromDate');
+  const previewReturnDate =
+    fromDateValue && unitPrice !== null
+      ? computeReturnDate(new Date(fromDateValue), durationType, durationQuantity)
+      : null;
+
+  const decrementQty = () =>
+    setValue('durationQuantity', Math.max(1, durationQuantity - 1), { shouldValidate: true });
+  const incrementQty = () =>
+    setValue('durationQuantity', durationQuantity + 1, { shouldValidate: true });
 
   // datetime-local inputs need "YYYY-MM-DDTHH:mm" in local time, not UTC —
   // toISOString() would shift by the timezone offset and let past times through.
@@ -149,24 +156,81 @@ export default function InquirePage() {
             Free to inquire — no payment until you agree terms with the provider.
           </p>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <input type="hidden" {...register('vehicleId')} />
 
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                type="datetime-local"
-                label="Pick-up date & time"
-                min={today}
-                error={errors.requestedFromDate?.message}
-                {...register('requestedFromDate')}
-              />
-              <Input
-                type="datetime-local"
-                label="Return date & time"
-                min={fromDate || today}
-                error={errors.requestedToDate?.message}
-                {...register('requestedToDate')}
-              />
+            <Input
+              type="datetime-local"
+              label="Pick-up date & time"
+              min={today}
+              error={errors.requestedFromDate?.message}
+              {...register('requestedFromDate')}
+            />
+
+            <div>
+              <label className="mb-2 block text-[13px] font-semibold text-slate-700">
+                Rental duration
+              </label>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                {availableDurations.map((d) => {
+                  const optionPrice = getUnitPrice(vehicle, d.value);
+                  const active = durationType === d.value;
+                  return (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() => setValue('durationType', d.value, { shouldValidate: true })}
+                      className={cn(
+                        'rounded-lg border px-2 py-2.5 text-center transition-colors',
+                        active
+                          ? 'border-primary bg-primary/5'
+                          : 'border-slate-200 hover:border-slate-300',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'block text-sm font-medium',
+                          active ? 'text-primary' : 'text-slate-700',
+                        )}
+                      >
+                        {d.label}
+                      </span>
+                      <span className="block font-mono text-[11px] text-slate-400">
+                        {currency} {optionPrice?.toLocaleString()}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {errors.durationType && (
+                <p className="mt-1 text-xs text-destructive">{errors.durationType.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-[13px] font-semibold text-slate-700">
+                {availableDurations.find((d) => d.value === durationType)?.label ?? 'Quantity'}
+              </label>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={decrementQty}
+                  disabled={durationQuantity <= 1}
+                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="w-10 text-center font-mono text-lg font-semibold text-ink">
+                  {durationQuantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={incrementQty}
+                  className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 text-slate-600 transition-colors hover:bg-slate-50"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <Input
@@ -228,15 +292,24 @@ export default function InquirePage() {
 
             <div className="space-y-2 border-t border-border-subtle pt-3 text-sm">
               <div className="flex justify-between font-mono text-slate-600">
-                <span>{getCurrencyCode(vehicle.showroom?.country)} {price} / day</span>
-              </div>
-              {days > 0 && (
-                <div className="flex justify-between font-mono font-semibold text-ink">
-                  <span className="font-sans">
-                    {days} day{days !== 1 ? 's' : ''}
+                <span>
+                  {currency} {unitPrice?.toLocaleString()} ×{' '}
+                  {durationQuantity}
+                </span>
+                {total !== null && (
+                  <span className="font-semibold text-ink">
+                    {currency} {total.toLocaleString()} est.
                   </span>
-                  <span>{getCurrencyCode(vehicle.showroom?.country)} {(Number(vehicle.pricePerDay) * days).toLocaleString()} est.</span>
-                </div>
+                )}
+              </div>
+              {previewReturnDate && (
+                <p className="text-xs text-text-faint">
+                  Return by{' '}
+                  {previewReturnDate.toLocaleString('en-AE', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  })}
+                </p>
               )}
             </div>
 

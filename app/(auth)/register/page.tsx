@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
@@ -13,9 +13,12 @@ import { useAuth } from '../../../hooks/useAuth';
 import { Role } from '../../../types/enums';
 import { Button, Input, RadioCard } from '../../../components/ui';
 
-export default function RegisterPage() {
+function RegisterPageContent() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect');
+  const loginHref = redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login';
   const { register: registerUser } = useAuth();
 
   const {
@@ -37,7 +40,9 @@ export default function RegisterPage() {
       const { confirmPassword: _skip, ...payload } = data;
       await registerUser(payload);
       toast.success('Account created! Please check your email to verify your account.');
-      router.push('/login');
+      // Carries the caller's intent (e.g. "send inquiry on this vehicle")
+      // through registration -> login, instead of dropping it here.
+      router.push(loginHref);
     } catch (error: unknown) {
       const message =
         (error as { response?: { data?: { error?: { message?: string } } } })?.response?.data
@@ -83,7 +88,7 @@ export default function RegisterPage() {
         <h1 className="mb-1.5 text-[26px] font-bold tracking-tight text-ink">Create your account</h1>
         <p className="mb-6 text-sm text-text-muted">
           Already have one?{' '}
-          <Link href="/login" className="font-semibold text-brand-600 hover:underline">
+          <Link href={loginHref} className="font-semibold text-brand-600 hover:underline">
             Sign in
           </Link>
         </p>
@@ -172,5 +177,13 @@ export default function RegisterPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterPageContent />
+    </Suspense>
   );
 }

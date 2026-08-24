@@ -5,6 +5,7 @@ import { BadgeCheck, Calendar, ChevronRight, Eye, Fuel, Image as ImageIcon, MapP
 import { fetchVehicleBySlug } from '../../../../lib/api/server';
 import type { ListingVehicleDetail } from '../../../../lib/api/listings.api';
 import { getCurrencyCode } from '../../../../lib/utils/currency';
+import { getAvailableDurations, getUnitPrice } from '../../../../lib/utils/rentalDuration';
 import { Card } from '../../../../components/ui';
 import { RatingSummaryBadge } from '../../../../components/common/RatingSummaryBadge';
 import { ReviewsList } from '../../../../components/common/ReviewsList';
@@ -47,8 +48,8 @@ export default async function VehicleDetailPage({ params }: PageProps) {
 
   const vehicle = res.data as ListingVehicleDetail;
   const price = Number(vehicle.pricePerDay).toLocaleString();
-  const weekPrice = vehicle.pricePerWeek ? Number(vehicle.pricePerWeek).toLocaleString() : null;
   const currency = getCurrencyCode(vehicle.showroom?.country);
+  const availableDurations = getAvailableDurations(vehicle);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -172,10 +173,20 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                 <span className="font-mono text-[26px] font-semibold tracking-tight text-ink">{currency} {price}</span>
                 <span className="text-[13px] text-text-muted">/ day</span>
               </div>
-              {weekPrice ? (
-                <p className="mt-1 text-[13px] text-text-faint">{currency} {weekPrice} / week</p>
-              ) : (
-                <p className="mt-1 text-[13px] text-text-faint">Weekly and monthly rates on request.</p>
+
+              {availableDurations.length > 1 && (
+                <dl className="mt-3 space-y-1 border-t border-border-subtle pt-3">
+                  {availableDurations
+                    .filter((d) => d.value !== 'DAY')
+                    .map((d) => (
+                      <div key={d.value} className="flex items-center justify-between text-[13px]">
+                        <dt className="text-text-muted">{d.label}</dt>
+                        <dd className="font-mono font-medium text-ink">
+                          {currency} {getUnitPrice(vehicle, d.value)!.toLocaleString()}
+                        </dd>
+                      </div>
+                    ))}
+                </dl>
               )}
 
               {/* Location */}

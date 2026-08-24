@@ -15,7 +15,11 @@ function LoginPageContent() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl');
+  // middleware.ts uses `callbackUrl` for protected-route redirects; the
+  // vehicle/trip inquiry flows use `redirect` — accept either so signing in
+  // from either path lands the user back where they actually meant to go,
+  // instead of silently falling through to their dashboard.
+  const callbackUrl = searchParams.get('callbackUrl') || searchParams.get('redirect');
   const { login, getDashboardRoute } = useAuth();
 
   const {
@@ -90,7 +94,10 @@ function LoginPageContent() {
 
         <p className="mt-6 text-center text-sm text-text-muted">
           Don&apos;t have an account?{' '}
-          <Link href="/register" className="font-semibold text-brand-600 hover:underline">
+          <Link
+            href={callbackUrl ? `/register?redirect=${encodeURIComponent(callbackUrl)}` : '/register'}
+            className="font-semibold text-brand-600 hover:underline"
+          >
             Create one
           </Link>
         </p>

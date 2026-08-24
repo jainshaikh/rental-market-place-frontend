@@ -14,8 +14,11 @@ export interface ListingVehicleCard {
   make: string;
   model: string;
   year: number;
+  pricePer6Hours: string | null;
+  pricePer12Hours: string | null;
   pricePerDay: string;
   pricePerWeek: string | null;
+  pricePerMonth: string | null;
   transmission: Transmission;
   fuelType: FuelType;
   seatingCapacity: number;

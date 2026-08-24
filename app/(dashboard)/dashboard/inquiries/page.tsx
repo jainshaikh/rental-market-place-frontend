@@ -6,6 +6,7 @@ import { useMyBookings, useUpdateBookingStatus } from '../../../../hooks/useBook
 import type { BookingRequest, BookingStatus } from '../../../../lib/api/bookings.api';
 import { cn } from '../../../../lib/utils/cn';
 import { getCurrencyCode } from '../../../../lib/utils/currency';
+import { formatDurationLabel } from '../../../../lib/utils/rentalDuration';
 import { WhatsAppButton } from '../../../../components/ui';
 
 const STATUS_META: Record<BookingStatus, { label: string; color: string }> = {
@@ -157,14 +158,10 @@ function UserInquiryCard({ inquiry, onCancel }: { inquiry: BookingRequest; onCan
     dateStyle: 'medium',
     timeStyle: 'short',
   });
-  const days = Math.max(
-    0,
-    Math.ceil(
-      (new Date(inquiry.requestedToDate).getTime() -
-        new Date(inquiry.requestedFromDate).getTime()) /
-        (1000 * 60 * 60 * 24),
-    ),
-  );
+  const durationLabel =
+    inquiry.durationType && inquiry.durationQuantity
+      ? formatDurationLabel(inquiry.durationType, inquiry.durationQuantity)
+      : null;
   const thumb = inquiry.vehicle.images?.[0]?.url;
   const canCancel = inquiry.status === 'PENDING' || inquiry.status === 'CONTACTED';
 
@@ -217,8 +214,15 @@ function UserInquiryCard({ inquiry, onCancel }: { inquiry: BookingRequest; onCan
           </div>
 
           <div className="mt-2 text-xs text-slate-500">
-            {fromDate} → {toDate} · {days} day{days !== 1 ? 's' : ''} · {getCurrencyCode(inquiry.vehicle.showroom?.country)}{' '}
-            {(Number(inquiry.vehicle.pricePerDay) * days).toLocaleString()} est.
+            {fromDate} → {toDate}
+            {durationLabel && <> · {durationLabel}</>}
+            {inquiry.totalPrice != null && (
+              <>
+                {' '}
+                · {getCurrencyCode(inquiry.vehicle.showroom?.country)}{' '}
+                {Number(inquiry.totalPrice).toLocaleString()} est.
+              </>
+            )}
           </div>
 
           {/* Provider note */}

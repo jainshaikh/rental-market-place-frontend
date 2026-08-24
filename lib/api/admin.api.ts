@@ -124,8 +124,11 @@ export interface AdminVehicleDetail {
   fuelType: string;
   seatingCapacity: number;
   engineType?: string | null;
+  pricePer6Hours?: string | number | null;
+  pricePer12Hours?: string | number | null;
   pricePerDay: string | number;
   pricePerWeek?: string | number | null;
+  pricePerMonth?: string | number | null;
   locationText?: string | null;
   availabilityNotes?: string | null;
   pricingNotes?: string | null;

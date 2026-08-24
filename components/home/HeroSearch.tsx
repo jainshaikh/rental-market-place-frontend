@@ -46,7 +46,7 @@ export function HeroSearch({ cities }: HeroSearchProps) {
             value={city}
             onChange={(e) => setCity(e.target.value)}
             aria-label="City"
-            className="text-ink-soft h-11 w-full appearance-none bg-transparent pl-4 pr-10 text-sm font-medium focus:outline-none sm:w-auto"
+            className="h-11 w-full appearance-none bg-transparent pl-4 pr-10 text-sm font-medium text-ink focus:outline-none sm:w-auto"
           >
             <option value="">All cities</option>
             {cities.map((c) => (

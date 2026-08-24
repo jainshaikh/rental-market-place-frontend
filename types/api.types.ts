@@ -123,8 +123,11 @@ export interface ProviderVehicle {
   fuelType: FuelType;
   seatingCapacity: number;
   engineType: string | null;
+  pricePer6Hours: string | null;
+  pricePer12Hours: string | null;
   pricePerDay: string;
   pricePerWeek: string | null;
+  pricePerMonth: string | null;
   locationText: string | null;
   availabilityNotes: string | null;
   pricingNotes: string | null;
@@ -148,8 +151,11 @@ export interface VehicleCard {
   make: string;
   model: string;
   year: number;
+  pricePer6Hours: string | null;
+  pricePer12Hours: string | null;
   pricePerDay: string;
   pricePerWeek: string | null;
+  pricePerMonth: string | null;
   transmission: Transmission;
   fuelType: FuelType;
   seatingCapacity: number;

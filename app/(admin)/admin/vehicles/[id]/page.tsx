@@ -176,7 +176,10 @@ export default function AdminVehicleDetailPage() {
         <div className="grid sm:grid-cols-3 gap-4 text-sm">
           <DetailRow label="Seating capacity" value={`${vehicle.seatingCapacity} seats`} />
           <DetailRow label="Engine" value={vehicle.engineType} />
+          <DetailRow label="Price/6hrs" value={vehicle.pricePer6Hours ? `${getCurrencyCode(vehicle.showroom?.country)} ${Number(vehicle.pricePer6Hours).toLocaleString()}` : null} />
+          <DetailRow label="Price/12hrs" value={vehicle.pricePer12Hours ? `${getCurrencyCode(vehicle.showroom?.country)} ${Number(vehicle.pricePer12Hours).toLocaleString()}` : null} />
           <DetailRow label="Price/week" value={vehicle.pricePerWeek ? `${getCurrencyCode(vehicle.showroom?.country)} ${Number(vehicle.pricePerWeek).toLocaleString()}` : null} />
+          <DetailRow label="Price/month" value={vehicle.pricePerMonth ? `${getCurrencyCode(vehicle.showroom?.country)} ${Number(vehicle.pricePerMonth).toLocaleString()}` : null} />
           <DetailRow label="Location" value={vehicle.locationText} />
           <DetailRow label="Availability notes" value={vehicle.availabilityNotes} />
           <DetailRow label="Pricing notes" value={vehicle.pricingNotes} />

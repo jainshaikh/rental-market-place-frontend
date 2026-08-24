@@ -88,7 +88,7 @@ export default async function HomePage() {
             blue-on-slate glow — decorative only, hence pointer-events-none. */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -right-40 -top-48 h-[30rem] w-[30rem] rounded-full bg-brand-600/25 blur-[120px]" />
-          <div className="bg-amber/20 absolute -bottom-32 -left-24 h-80 w-80 rounded-full blur-[100px]" />
+          <div className="absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-amber/20 blur-[100px]" />
         </div>
 
         <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-4 pb-28 pt-20 sm:px-6 lg:grid-cols-[1fr_minmax(0,560px)] lg:px-8">
@@ -118,13 +118,13 @@ export default async function HomePage() {
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link
                 href="/vehicles"
-                className="bg-brand shadow-coral ease-spring hover:shadow-coral-lg inline-flex h-[52px] items-center rounded-control px-7 text-[15px] font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+                className="inline-flex h-[52px] items-center rounded-control bg-brand px-7 text-[15px] font-semibold text-white shadow-coral transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:shadow-coral-lg active:translate-y-0 active:scale-[0.98]"
               >
                 Browse all vehicles
               </Link>
               <Link
                 href="/register?role=PROVIDER"
-                className="ease-spring group inline-flex h-[52px] items-center gap-2 rounded-control border border-white/20 px-7 text-[15px] font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/[0.06] active:translate-y-0"
+                className="group inline-flex h-[52px] items-center gap-2 rounded-control border border-white/20 px-7 text-[15px] font-semibold text-[white] transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/[0.06] active:translate-y-0"
               >
                 List your fleet
                 <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
@@ -149,7 +149,7 @@ export default async function HomePage() {
                 <div className="group">
                   {/* Icons, not emoji — emoji render differently per platform and
                       cannot inherit the brand colour on hover. */}
-                  <span className="ease-spring group-hover:bg-brand mb-4 inline-flex h-11 w-11 items-center justify-center rounded-media border border-brand-100 bg-brand-50 text-brand-700 transition-all duration-200 group-hover:-rotate-6 group-hover:scale-105 group-hover:border-transparent group-hover:text-white">
+                  <span className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-media border border-brand-100 bg-brand-50 text-brand-700 transition-all duration-200 ease-spring group-hover:-rotate-6 group-hover:scale-105 group-hover:border-transparent group-hover:bg-brand group-hover:text-white">
                     <Icon className="h-5 w-5" />
                   </span>
                   <p className="text-[15px] font-semibold text-ink">{title}</p>
@@ -212,7 +212,7 @@ export default async function HomePage() {
                 <Reveal key={city} delay={i * 35}>
                   <Link
                     href={`/vehicles?city=${city}`}
-                    className="text-ink-soft ease-spring inline-flex h-10 items-center rounded-control border border-border-subtle bg-page px-4 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-600 hover:text-brand-700 hover:shadow-sm active:translate-y-0"
+                    className="text-ink-soft inline-flex h-10 items-center rounded-control border border-border-subtle bg-page px-4 text-sm font-medium transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:border-brand-600 hover:text-brand-700 hover:shadow-sm active:translate-y-0"
                   >
                     {city.charAt(0).toUpperCase() + city.slice(1)}
                   </Link>
@@ -227,7 +227,7 @@ export default async function HomePage() {
       <section className="relative overflow-hidden bg-ink">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -right-32 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-brand-600/20 blur-[110px]" />
-          <div className="bg-amber/15 absolute -left-32 top-0 h-64 w-64 rounded-full blur-[90px]" />
+          <div className="absolute -left-32 top-0 h-64 w-64 rounded-full bg-amber/15 blur-[90px]" />
         </div>
         <div className="relative mx-auto max-w-6xl px-4 py-24 text-center sm:px-6 lg:px-8">
           <Reveal>
@@ -240,7 +240,7 @@ export default async function HomePage() {
             </p>
             <Link
               href="/register?role=PROVIDER"
-              className="bg-brand shadow-coral ease-spring hover:shadow-coral-lg mt-9 inline-flex h-[52px] items-center rounded-control px-8 text-[15px] font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+              className="mt-9 inline-flex h-[52px] items-center rounded-control bg-brand px-8 text-[15px] font-semibold text-white shadow-coral transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:shadow-coral-lg active:translate-y-0 active:scale-[0.98]"
             >
               Get started as a provider
             </Link>
@@ -252,7 +252,7 @@ export default async function HomePage() {
       <footer className="border-t border-border-subtle bg-surface">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-5 px-4 py-10 text-xs text-text-faint sm:flex-row sm:px-6 lg:px-8">
           <div className="flex items-center gap-2.5">
-            <span className="bg-brand flex h-7 w-7 items-center justify-center rounded-chip text-xs font-bold text-white">
+            <span className="flex h-7 w-7 items-center justify-center rounded-chip bg-brand text-xs font-bold text-white">
               R
             </span>
             <span className="text-[13px] font-semibold text-ink">RentalMarket</span>

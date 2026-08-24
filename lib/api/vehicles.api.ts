@@ -10,8 +10,11 @@ export interface CreateVehiclePayload {
   fuelType: string;
   seatingCapacity: number;
   engineType?: string;
+  pricePer6Hours?: number;
+  pricePer12Hours?: number;
   pricePerDay: number;
   pricePerWeek?: number;
+  pricePerMonth?: number;
   locationText?: string;
   availabilityNotes?: string;
   pricingNotes?: string;

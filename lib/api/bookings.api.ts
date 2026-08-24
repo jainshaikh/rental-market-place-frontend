@@ -1,5 +1,6 @@
 import { apiClient } from './client';
 import type { Market } from '../../types/api.types';
+import type { RentalDurationType } from '../utils/rentalDuration';
 
 export type BookingStatus =
   | 'PENDING'
@@ -41,6 +42,9 @@ export interface BookingRequest {
   status: BookingStatus;
   requestedFromDate: string;
   requestedToDate: string;
+  durationType?: RentalDurationType | null;
+  durationQuantity?: number | null;
+  totalPrice?: string | number | null;
   pickupLocation?: string | null;
   message?: string | null;
   providerNotes?: string | null;
@@ -65,7 +69,8 @@ export interface BookingsResponse {
 export interface CreateBookingRequestData {
   vehicleId: string;
   requestedFromDate: string;
-  requestedToDate: string;
+  durationType: RentalDurationType;
+  durationQuantity: number;
   pickupLocation?: string;
   message?: string;
 }

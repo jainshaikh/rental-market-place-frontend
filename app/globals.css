@@ -4,6 +4,14 @@
 
 @layer base {
   :root {
+    /* This app is light-mode only (see below) — without this, a browser
+       whose OS/user preference is dark mode renders browser-drawn native
+       controls (the <select> dropdown popup, date pickers, scrollbars)
+       using a dark palette regardless of the page's own light CSS, which is
+       how you get invisible white-on-white <option> text: the popup itself
+       is browser-chrome, not something this app's CSS can style directly. */
+    color-scheme: light;
+
     /* 4321-Drive design system v3 "Sunset Coral" — light mode only.
        These are the HSL equivalents of the fixed hex tokens in
        tailwind.config.ts. They exist ONLY so the pages still using

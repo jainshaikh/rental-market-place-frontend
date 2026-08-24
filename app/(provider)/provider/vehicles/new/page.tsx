@@ -200,10 +200,36 @@ export default function NewVehiclePage() {
         {/* Pricing */}
         <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5">
           <p className="text-sm font-semibold text-slate-800">Pricing</p>
+          <p className="text-xs text-slate-500">
+            Daily is required. Set any of the others to let renters pick that duration too —
+            leave a field blank if you don&apos;t want to offer it.
+          </p>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label required>Price per day ({currency})</Label>
+              <Label>6-hour price ({currency})</Label>
+              <input
+                type="number"
+                step="0.01"
+                {...register('pricePer6Hours', { valueAsNumber: true })}
+                placeholder="120"
+                className={inputCls}
+              />
+              <FieldError message={errors.pricePer6Hours?.message} />
+            </div>
+            <div>
+              <Label>12-hour price ({currency})</Label>
+              <input
+                type="number"
+                step="0.01"
+                {...register('pricePer12Hours', { valueAsNumber: true })}
+                placeholder="200"
+                className={inputCls}
+              />
+              <FieldError message={errors.pricePer12Hours?.message} />
+            </div>
+            <div>
+              <Label required>Daily price ({currency})</Label>
               <input
                 type="number"
                 step="0.01"
@@ -214,7 +240,7 @@ export default function NewVehiclePage() {
               <FieldError message={errors.pricePerDay?.message} />
             </div>
             <div>
-              <Label>Price per week ({currency})</Label>
+              <Label>Weekly price ({currency})</Label>
               <input
                 type="number"
                 step="0.01"
@@ -223,6 +249,17 @@ export default function NewVehiclePage() {
                 className={inputCls}
               />
               <FieldError message={errors.pricePerWeek?.message} />
+            </div>
+            <div>
+              <Label>Monthly price ({currency})</Label>
+              <input
+                type="number"
+                step="0.01"
+                {...register('pricePerMonth', { valueAsNumber: true })}
+                placeholder="7500"
+                className={inputCls}
+              />
+              <FieldError message={errors.pricePerMonth?.message} />
             </div>
           </div>
 

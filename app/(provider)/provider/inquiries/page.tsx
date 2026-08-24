@@ -6,6 +6,8 @@ import { Inbox, Image as ImageIcon, MapPin, Phone } from 'lucide-react';
 import { useProviderInquiries, useUpdateBookingStatus } from '../../../../hooks/useBookings';
 import type { BookingRequest, BookingStatus } from '../../../../lib/api/bookings.api';
 import { cn } from '../../../../lib/utils/cn';
+import { getCurrencyCode } from '../../../../lib/utils/currency';
+import { formatDurationLabel } from '../../../../lib/utils/rentalDuration';
 import { Button, Card, EmptyState, Pagination, SegmentedTabs, Textarea, WhatsAppButton } from '../../../../components/ui';
 import { StatusBadge } from '../../../../components/common/StatusBadge';
 import * as Dialog from '@radix-ui/react-dialog';
@@ -160,13 +162,10 @@ function InquiryCard({
 }) {
   const fromDate = new Date(inquiry.requestedFromDate).toLocaleString('en-AE', { dateStyle: 'medium', timeStyle: 'short' });
   const toDate = new Date(inquiry.requestedToDate).toLocaleString('en-AE', { dateStyle: 'medium', timeStyle: 'short' });
-  const days = Math.max(
-    0,
-    Math.ceil(
-      (new Date(inquiry.requestedToDate).getTime() - new Date(inquiry.requestedFromDate).getTime()) /
-        (1000 * 60 * 60 * 24),
-    ),
-  );
+  const durationLabel =
+    inquiry.durationType && inquiry.durationQuantity
+      ? formatDurationLabel(inquiry.durationType, inquiry.durationQuantity)
+      : null;
   const thumb = inquiry.vehicle.images?.[0]?.url;
 
   return (
@@ -208,8 +207,15 @@ function InquiryCard({
 
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs text-text-muted">
             <span>
-              {fromDate} → {toDate} ({days}d)
+              {fromDate} → {toDate}
+              {durationLabel && ` (${durationLabel})`}
             </span>
+            {inquiry.totalPrice != null && (
+              <span>
+                {getCurrencyCode(inquiry.vehicle.showroom?.country)}{' '}
+                {Number(inquiry.totalPrice).toLocaleString()} est.
+              </span>
+            )}
             {inquiry.pickupLocation && (
               <span className="flex items-center gap-1 font-sans">
                 <MapPin className="h-3 w-3" />

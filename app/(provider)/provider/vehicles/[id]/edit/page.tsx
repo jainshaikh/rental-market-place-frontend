@@ -75,8 +75,11 @@ export default function EditVehiclePage() {
         fuelType: vehicle.fuelType as VehicleFormValues['fuelType'],
         seatingCapacity: vehicle.seatingCapacity,
         engineType: vehicle.engineType ?? '',
+        pricePer6Hours: vehicle.pricePer6Hours ? Number(vehicle.pricePer6Hours) : undefined,
+        pricePer12Hours: vehicle.pricePer12Hours ? Number(vehicle.pricePer12Hours) : undefined,
         pricePerDay: Number(vehicle.pricePerDay),
         pricePerWeek: vehicle.pricePerWeek ? Number(vehicle.pricePerWeek) : undefined,
+        pricePerMonth: vehicle.pricePerMonth ? Number(vehicle.pricePerMonth) : undefined,
         availabilityNotes: vehicle.availabilityNotes ?? '',
         pricingNotes: vehicle.pricingNotes ?? '',
         specialConditions: vehicle.specialConditions ?? '',
@@ -273,10 +276,34 @@ export default function EditVehiclePage() {
           {/* Pricing */}
           <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5">
             <p className="text-sm font-semibold text-slate-800">Pricing</p>
+            <p className="text-xs text-slate-500">
+              Daily is required. Set any of the others to let renters pick that duration too —
+              leave a field blank if you don&apos;t want to offer it.
+            </p>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label required>Price per day ({currency})</Label>
+                <Label>6-hour price ({currency})</Label>
+                <input
+                  type="number"
+                  step="0.01"
+                  {...register('pricePer6Hours', { valueAsNumber: true })}
+                  className={inputCls}
+                />
+                <FieldError message={errors.pricePer6Hours?.message} />
+              </div>
+              <div>
+                <Label>12-hour price ({currency})</Label>
+                <input
+                  type="number"
+                  step="0.01"
+                  {...register('pricePer12Hours', { valueAsNumber: true })}
+                  className={inputCls}
+                />
+                <FieldError message={errors.pricePer12Hours?.message} />
+              </div>
+              <div>
+                <Label required>Daily price ({currency})</Label>
                 <input
                   type="number"
                   step="0.01"
@@ -286,13 +313,24 @@ export default function EditVehiclePage() {
                 <FieldError message={errors.pricePerDay?.message} />
               </div>
               <div>
-                <Label>Price per week ({currency})</Label>
+                <Label>Weekly price ({currency})</Label>
                 <input
                   type="number"
                   step="0.01"
                   {...register('pricePerWeek', { valueAsNumber: true })}
                   className={inputCls}
                 />
+                <FieldError message={errors.pricePerWeek?.message} />
+              </div>
+              <div>
+                <Label>Monthly price ({currency})</Label>
+                <input
+                  type="number"
+                  step="0.01"
+                  {...register('pricePerMonth', { valueAsNumber: true })}
+                  className={inputCls}
+                />
+                <FieldError message={errors.pricePerMonth?.message} />
               </div>
             </div>
 

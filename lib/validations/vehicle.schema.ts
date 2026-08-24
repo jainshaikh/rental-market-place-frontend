@@ -23,10 +23,25 @@ export const vehicleSchema = z.object({
     .min(1, 'Minimum 1 seat')
     .max(20, 'Maximum 20 seats'),
   engineType: z.string().max(60).optional().or(z.literal('')),
+  pricePer6Hours: z
+    .number({ invalid_type_error: 'Price must be a number' })
+    .min(1)
+    .optional()
+    .or(z.literal(0).transform(() => undefined)),
+  pricePer12Hours: z
+    .number({ invalid_type_error: 'Price must be a number' })
+    .min(1)
+    .optional()
+    .or(z.literal(0).transform(() => undefined)),
   pricePerDay: z
     .number({ invalid_type_error: 'Price must be a number' })
     .min(1, 'Price per day is required'),
   pricePerWeek: z
+    .number({ invalid_type_error: 'Price must be a number' })
+    .min(1)
+    .optional()
+    .or(z.literal(0).transform(() => undefined)),
+  pricePerMonth: z
     .number({ invalid_type_error: 'Price must be a number' })
     .min(1)
     .optional()
