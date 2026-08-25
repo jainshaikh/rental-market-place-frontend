@@ -5,8 +5,13 @@ import { VehiclesView } from '../../../components/listings/VehiclesView';
 import type { ListingsResponse } from '../../../lib/api/listings.api';
 
 export const metadata: Metadata = {
-  title: 'Browse Vehicles — Rental Marketplace',
-  description: 'Find and rent vehicles from verified providers. Search by make, location, price, and more.',
+  title: 'Cars for Rent — Browse Vehicles Near You',
+  description:
+    'Find a car for rent in Karachi, Lahore, Islamabad, and other cities in Pakistan. Compare verified providers by make, price, and location — book in minutes.',
+  keywords: ['cars for rent', 'car rental search', 'rent a car near me', 'vehicle hire Pakistan'],
+  alternates: {
+    canonical: '/vehicles',
+  },
 };
 
 interface PageProps {

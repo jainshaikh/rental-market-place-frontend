@@ -12,6 +12,7 @@ import { registerSchema, type RegisterFormValues } from '../../../lib/validation
 import { useAuth } from '../../../hooks/useAuth';
 import { Role } from '../../../types/enums';
 import { Button, Input, RadioCard } from '../../../components/ui';
+import { Logo } from '../../../components/common/Logo';
 
 function RegisterPageContent() {
   const [isLoading, setIsLoading] = useState(false);
@@ -45,8 +46,8 @@ function RegisterPageContent() {
       router.push(loginHref);
     } catch (error: unknown) {
       const message =
-        (error as { response?: { data?: { error?: { message?: string } } } })?.response?.data
-          ?.error?.message || 'Registration failed. Please try again.';
+        (error as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error
+          ?.message || 'Registration failed. Please try again.';
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -57,11 +58,8 @@ function RegisterPageContent() {
     <div className="mx-auto grid w-full max-w-[900px] grid-cols-1 overflow-hidden rounded-sheet border border-border-subtle bg-surface shadow-md md:grid-cols-2">
       {/* Left — brand panel */}
       <div className="hidden flex-col justify-between bg-ink p-10 text-white md:flex">
-        <div className="flex items-center gap-2">
-          <div className="flex h-[26px] w-[26px] items-center justify-center rounded-control bg-brand-600 text-[13px] font-bold">
-            R
-          </div>
-          <span className="text-sm font-semibold">RentalMarket</span>
+        <div className="flex items-center">
+          <Logo theme="dark" className="h-6" />
         </div>
         <div>
           <p className="mb-3.5 max-w-[15ch] text-[30px] font-bold leading-tight tracking-tight">
@@ -85,7 +83,9 @@ function RegisterPageContent() {
 
       {/* Right — form panel */}
       <div className="p-8 sm:p-10">
-        <h1 className="mb-1.5 text-[26px] font-bold tracking-tight text-ink">Create your account</h1>
+        <h1 className="mb-1.5 text-[26px] font-bold tracking-tight text-ink">
+          Create your account
+        </h1>
         <p className="mb-6 text-sm text-text-muted">
           Already have one?{' '}
           <Link href={loginHref} className="font-semibold text-brand-600 hover:underline">
@@ -95,7 +95,9 @@ function RegisterPageContent() {
 
         {/* Account type toggle */}
         <div className="mb-5">
-          <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted">I want to</p>
+          <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted">
+            I want to
+          </p>
           <div className="grid grid-cols-2 gap-2.5">
             <RadioCard
               selected={selectedRole === Role.USER}

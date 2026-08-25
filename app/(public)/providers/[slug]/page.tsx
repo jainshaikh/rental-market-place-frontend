@@ -12,11 +12,19 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const res = await fetchProviderBySlug(params.slug);
-  if (!res?.data) return { title: 'Provider Not Found — Rental Marketplace' };
+  if (!res?.data) return { title: 'Provider Not Found — KerayeGo' };
   const p = res.data;
+  const city = p.showrooms?.[0]?.city;
   return {
-    title: `${p.businessName} — Vehicle Rentals | Rental Marketplace`,
-    description: p.businessDescription ?? `Browse all vehicles available from ${p.businessName}.`,
+    title: city
+      ? `${p.businessName} — Car Rental in ${city.charAt(0).toUpperCase() + city.slice(1)}`
+      : `${p.businessName} — Vehicle Rentals | KerayeGo`,
+    description:
+      p.businessDescription ??
+      `Browse cars for rent from ${p.businessName}${city ? ` in ${city}` : ''}. Verified provider on KerayeGo.`,
+    alternates: {
+      canonical: `/providers/${params.slug}`,
+    },
   };
 }
 
@@ -30,8 +38,30 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   const vehicleCount = provider._count?.vehicles ?? 0;
   const initial = provider.businessName?.trim()?.[0]?.toUpperCase() ?? '?';
 
+  const localBusinessJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'AutoRental',
+    name: provider.businessName,
+    description: provider.businessDescription ?? undefined,
+    image: provider.logoUrl ?? undefined,
+    address: primaryShowroom
+      ? {
+          '@type': 'PostalAddress',
+          streetAddress: primaryShowroom.area ?? undefined,
+          addressLocality: primaryShowroom.city,
+          addressCountry: 'PK',
+        }
+      : undefined,
+    telephone: primaryShowroom?.contactNumber ?? undefined,
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
+      />
+
       {/* Breadcrumb */}
       <nav className="mb-6 flex items-center gap-2 text-sm text-slate-400">
         <Link href="/providers" className="hover:text-slate-600">

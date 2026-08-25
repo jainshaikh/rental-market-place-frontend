@@ -4,7 +4,7 @@ import { MobileSidebarBar } from '../../components/layout/MobileSidebarBar';
 export default function ProviderLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-page">
-      <MobileSidebarBar brand="RentalMarket Provider">
+      <MobileSidebarBar brand="KerayeGo Provider">
         <ProviderSidebar />
       </MobileSidebarBar>
 

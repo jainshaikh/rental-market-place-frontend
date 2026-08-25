@@ -14,13 +14,14 @@ import { HeroSearch } from '../components/home/HeroSearch';
 import { HeroStats, type HeroStat } from '../components/home/HeroStats';
 import { HeroCollage } from '../components/home/HeroCollage';
 import { Reveal } from '../components/common/Reveal';
+import { Logo } from '../components/common/Logo';
 
 export const metadata: Metadata = {
-  title: 'Rental Marketplace — Find Your Perfect Car in Pakistan',
+  title: 'KerayeGo — Car Rental & Intercity Ride Sharing in Pakistan',
   description:
     'Browse hundreds of rental vehicles from verified providers across Karachi, Lahore, and Islamabad. Compare prices, check availability, and send inquiries in seconds.',
   openGraph: {
-    title: 'Rental Marketplace — Find Your Perfect Car',
+    title: 'KerayeGo — Find Your Perfect Car',
     description: 'Verified rental providers. No hidden fees. Book in minutes.',
   },
 };
@@ -211,8 +212,8 @@ export default async function HomePage() {
               {cities.slice(0, 10).map((city, i) => (
                 <Reveal key={city} delay={i * 35}>
                   <Link
-                    href={`/vehicles?city=${city}`}
-                    className="text-ink-soft inline-flex h-10 items-center rounded-control border border-border-subtle bg-page px-4 text-sm font-medium transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:border-brand-600 hover:text-brand-700 hover:shadow-sm active:translate-y-0"
+                    href={`/car-rental/${encodeURIComponent(city)}`}
+                    className="inline-flex h-10 items-center rounded-control border border-border-subtle bg-page px-4 text-sm font-medium text-ink transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:border-brand-600 hover:text-brand-700 hover:shadow-sm active:translate-y-0"
                   >
                     {city.charAt(0).toUpperCase() + city.slice(1)}
                   </Link>
@@ -251,13 +252,10 @@ export default async function HomePage() {
       {/* ── Footer ────────────────────────────────────────────────────── */}
       <footer className="border-t border-border-subtle bg-surface">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-5 px-4 py-10 text-xs text-text-faint sm:flex-row sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-chip bg-brand text-xs font-bold text-white">
-              R
-            </span>
-            <span className="text-[13px] font-semibold text-ink">RentalMarket</span>
+          <div className="flex items-center">
+            <Logo className="h-6" />
           </div>
-          <p>&copy; {new Date().getFullYear()} Rental Marketplace. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} KerayeGo. All rights reserved.</p>
           <div className="flex gap-5">
             <Link href="/vehicles" className="transition-colors hover:text-brand-700">
               Browse

@@ -4,7 +4,7 @@ import { MobileSidebarBar } from '../../components/layout/MobileSidebarBar';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-page">
-      <MobileSidebarBar brand="RentalMarket">
+      <MobileSidebarBar brand="KerayeGo">
         <DashboardSidebar />
       </MobileSidebarBar>
 

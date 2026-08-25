@@ -22,37 +22,74 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://rentalmarket.ae';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Rental Marketplace — Find Your Perfect Car',
-    template: '%s | Rental Marketplace',
+    default: 'KerayeGo — Car Rental & Intercity Ride Sharing in Pakistan',
+    template: '%s | KerayeGo',
   },
   description:
-    'Discover and book rental vehicles from verified providers. Compare prices, browse fleets, and submit booking inquiries easily.',
-  // NOTE: as of the 2026-08-23 multi-market work, currency display across
-  // the app is dynamic per listing/trip (see lib/utils/currency.ts) — Pakistan
-  // and Saudi Arabia/UAE data now coexist correctly. This file's UAE-flavored
-  // keywords/locale and the Pakistan-flavored copy still in app/page.tsx's
-  // marketing text remain un-reconciled — that's a content/SEO decision
-  // (which market's story leads on the homepage), not a data-model gap.
+    'Find a car for rent in Karachi, Lahore, Islamabad, Hyderabad, and other cities across Pakistan. Compare verified providers, real daily and weekly rates, and book in minutes — or share a ride and carpool between cities on Intercity Trips.',
+  // Pakistan leads the homepage/keyword story since it's the live, seeded
+  // market (see prisma/seed.ts) — Saudi Arabia/UAE data coexists (currency
+  // display is dynamic per listing, see lib/utils/currency.ts) but isn't the
+  // primary SEO target yet. Revisit this file when that market goes live.
   keywords: [
-    'car rental',
-    'vehicle hire',
-    'rental marketplace',
-    'book a car',
-    'Dubai car rental',
-    'UAE rental',
+    'car for rent',
+    'car rental Pakistan',
+    'rent a car in Karachi',
+    'car rental Karachi',
+    'car rental Hyderabad',
+    'car rental Lahore',
+    'car rental Islamabad',
+    'vehicle hire Pakistan',
+    'carpool',
+    'share your ride',
+    'intercity trips Pakistan',
+    'ride sharing Pakistan',
+    'book a car online',
   ],
   openGraph: {
     type: 'website',
-    locale: 'en_AE',
-    siteName: 'Rental Marketplace',
+    locale: 'en_PK',
+    siteName: 'KerayeGo',
     url: siteUrl,
   },
   twitter: {
     card: 'summary_large_image',
-    site: '@rentalmarket',
+    site: '@Kerayego',
   },
   alternates: {
     canonical: siteUrl,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  icons: {
+    icon: '/favicon.png',
+    apple: '/apple-touch-icon.png',
+  },
+};
+
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'KerayeGo',
+  url: siteUrl,
+  areaServed: 'PK',
+  sameAs: [],
+};
+
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'KerayeGo',
+  url: siteUrl,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: `${siteUrl}/vehicles?search={search_term_string}`,
+    },
+    'query-input': 'required name=search_term_string',
   },
 };
 
@@ -60,6 +97,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${sans.variable} ${mono.variable} font-sans antialiased`}>
+        {/* Sitewide structured data — Organization + WebSite w/ sitelinks search box */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
         <QueryProvider>
           {children}
           <Toaster position="top-right" richColors closeButton />

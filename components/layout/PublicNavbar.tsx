@@ -7,6 +7,7 @@ import Cookies from 'js-cookie';
 import * as Dialog from '@radix-ui/react-dialog';
 import { ChevronRight, Menu, X } from 'lucide-react';
 import { cn } from '../../lib/utils/cn';
+import { Logo } from '../common/Logo';
 
 const NAV_LINKS = [
   { href: '/vehicles', label: 'Browse Vehicles' },
@@ -41,12 +42,9 @@ export function PublicNavbar() {
             <Menu className="h-5 w-5" />
           </button>
 
-          {/* Logo — gradient glyph tile + wordmark */}
-          <Link href="/" className="group flex flex-shrink-0 items-center gap-2.5">
-            <span className="bg-brand shadow-coral ease-spring flex h-[30px] w-[30px] items-center justify-center rounded-[9px] text-[15px] font-bold text-white transition-transform duration-200 group-hover:-rotate-6 group-hover:scale-105">
-              R
-            </span>
-            <span className="text-[17px] font-bold tracking-[-0.03em] text-ink">RentalMarket</span>
+          {/* Logo */}
+          <Link href="/" className="flex flex-shrink-0 items-center">
+            <Logo className="h-7" />
           </Link>
 
           {/* Nav links — active state is a tinted pill, not a colour change */}
@@ -90,7 +88,7 @@ export function PublicNavbar() {
                 </Link>
                 <Link
                   href="/register"
-                  className="bg-brand shadow-coral ease-spring hover:shadow-coral-lg inline-flex h-[38px] items-center rounded-control px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+                  className="inline-flex h-[38px] items-center rounded-control bg-brand px-5 text-sm font-semibold text-white shadow-coral transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:shadow-coral-lg active:translate-y-0 active:scale-[0.98]"
                 >
                   Register
                 </Link>
@@ -113,14 +111,9 @@ export function PublicNavbar() {
                 <Link
                   href="/"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2.5"
+                  className="flex items-center"
                 >
-                  <span className="bg-brand flex h-[26px] w-[26px] items-center justify-center rounded-[9px] text-[13px] font-bold text-white">
-                    R
-                  </span>
-                  <span className="text-[15px] font-bold tracking-[-0.03em] text-ink">
-                    RentalMarket
-                  </span>
+                  <Logo className="h-6" />
                 </Link>
               </Dialog.Title>
               <Dialog.Close className="rounded-control p-1.5 text-text-faint hover:bg-surface-hover hover:text-slate-600">
@@ -138,9 +131,7 @@ export function PublicNavbar() {
                     onClick={() => setMenuOpen(false)}
                     className={cn(
                       'rounded-control px-3.5 py-3 text-[15px] font-medium transition-colors',
-                      active
-                        ? 'bg-brand-50 text-brand-700'
-                        : 'text-ink hover:bg-surface-hover',
+                      active ? 'bg-brand-50 text-brand-700' : 'text-ink hover:bg-surface-hover',
                     )}
                   >
                     {label}
@@ -171,7 +162,7 @@ export function PublicNavbar() {
                   <Link
                     href="/register"
                     onClick={() => setMenuOpen(false)}
-                    className="bg-brand flex items-center justify-center rounded-control px-4 py-3 text-sm font-semibold text-white"
+                    className="flex items-center justify-center rounded-control bg-brand px-4 py-3 text-sm font-semibold text-white"
                   >
                     Register
                   </Link>

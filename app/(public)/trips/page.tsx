@@ -5,9 +5,20 @@ import { TripsView } from '../../../components/trips/TripsView';
 import type { TripsResponse, TripMetaCities } from '../../../lib/api/trips.api';
 
 export const metadata: Metadata = {
-  title: 'Intercity Trips — Rental Marketplace',
+  title: 'Intercity Trips — Carpool & Share a Ride Between Cities',
   description:
-    'Find a ride between cities. Browse drivers heading to your destination on your date and contact them directly on WhatsApp.',
+    'Carpool and share a ride between cities in Pakistan. Browse drivers heading to your destination on your date and contact them directly on WhatsApp — no fees, no middleman.',
+  keywords: [
+    'carpool Pakistan',
+    'share a ride',
+    'share your ride',
+    'intercity carpool',
+    'ride sharing Pakistan',
+    'find a ride between cities',
+  ],
+  alternates: {
+    canonical: '/trips',
+  },
 };
 
 interface PageProps {
@@ -37,6 +48,9 @@ export default async function TripsPage({ searchParams }: PageProps) {
           {initialData?.meta.total
             ? `${initialData.meta.total.toLocaleString()} upcoming trips — find a ride and connect with the driver on WhatsApp`
             : 'Going from one city to another? Find a driver already headed your way.'}
+        </p>
+        <p className="mt-1 text-sm text-text-muted">
+          Carpool and share a ride between cities — connect directly, no fees.
         </p>
       </div>
 

@@ -1,7 +1,17 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { BadgeCheck, Calendar, ChevronRight, Eye, Fuel, Image as ImageIcon, MapPin, Settings2, Users } from 'lucide-react';
+import {
+  BadgeCheck,
+  Calendar,
+  ChevronRight,
+  Eye,
+  Fuel,
+  Image as ImageIcon,
+  MapPin,
+  Settings2,
+  Users,
+} from 'lucide-react';
 import { fetchVehicleBySlug } from '../../../../lib/api/server';
 import type { ListingVehicleDetail } from '../../../../lib/api/listings.api';
 import { getCurrencyCode } from '../../../../lib/utils/currency';
@@ -17,7 +27,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const res = await fetchVehicleBySlug(params.slug);
-  if (!res?.data) return { title: 'Vehicle Not Found — Rental Marketplace' };
+  if (!res?.data) return { title: 'Vehicle Not Found — KerayeGo' };
 
   const v = res.data;
   const price = Number(v.pricePerDay).toLocaleString();
@@ -25,15 +35,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const location = v.showroom?.city ?? v.locationText ?? null;
 
   return {
-    title: `${v.title} — ${currency} ${price}/day | Rental Marketplace`,
+    title: `${v.title} — ${currency} ${price}/day | KerayeGo`,
     description: [
       v.title,
       `${v.year} · ${v.transmission} · ${v.fuelType}`,
-      location ? `Available in ${location}` : null,
+      location ? `For rent in ${location}` : null,
       `From ${currency} ${price} per day`,
     ]
       .filter(Boolean)
       .join(' · '),
+    keywords: [
+      `${v.make} ${v.model} for rent`,
+      location ? `car rental ${location}` : null,
+      location ? `${v.make} for rent in ${location}` : null,
+      `rent ${v.make} ${v.model}`,
+    ].filter((k): k is string => !!k),
+    alternates: {
+      canonical: `/vehicles/${v.slug}`,
+    },
     openGraph: {
       title: v.title,
       description: `Rent the ${v.title} for ${currency} ${price}/day from ${v.providerProfile.businessName}`,
@@ -51,8 +70,34 @@ export default async function VehicleDetailPage({ params }: PageProps) {
   const currency = getCurrencyCode(vehicle.showroom?.country);
   const availableDurations = getAvailableDurations(vehicle);
 
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: vehicle.title,
+    description: `${vehicle.year} ${vehicle.make} ${vehicle.model} — ${vehicle.transmission}, ${vehicle.fuelType}, ${vehicle.seatingCapacity} seats.`,
+    image: vehicle.images.map((img) => img.url),
+    brand: { '@type': 'Brand', name: vehicle.make },
+    offers: {
+      '@type': 'Offer',
+      businessFunction: 'http://purl.org/goodrelations/v1#LeaseOut',
+      price: vehicle.pricePerDay,
+      priceCurrency: currency,
+      availability:
+        vehicle.availability === 'AVAILABLE'
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
+      seller: { '@type': 'Organization', name: vehicle.providerProfile.businessName },
+      areaServed: vehicle.showroom?.city ?? undefined,
+    },
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
+
       {/* Breadcrumb */}
       <nav className="mb-4 flex items-center gap-2 text-xs text-text-muted">
         <Link href="/vehicles" className="hover:text-slate-700">
@@ -78,7 +123,9 @@ export default async function VehicleDetailPage({ params }: PageProps) {
 
           {/* Title + quick specs */}
           <div>
-            <h1 className="text-[26px] font-bold leading-tight tracking-tight text-ink">{vehicle.title}</h1>
+            <h1 className="text-[26px] font-bold leading-tight tracking-tight text-ink">
+              {vehicle.title}
+            </h1>
             <div className="mt-3.5 flex flex-wrap items-center gap-3.5 text-[13px] text-text-muted">
               <RatingSummaryBadge subjectType="VEHICLE" subjectId={vehicle.id} size="sm" />
               <span className="flex items-center gap-1.5">
@@ -92,7 +139,11 @@ export default async function VehicleDetailPage({ params }: PageProps) {
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-              <SpecTile icon={Settings2} label="Transmission" value={titleCase(vehicle.transmission)} />
+              <SpecTile
+                icon={Settings2}
+                label="Transmission"
+                value={titleCase(vehicle.transmission)}
+              />
               <SpecTile icon={Fuel} label="Fuel" value={titleCase(vehicle.fuelType)} />
               <SpecTile icon={Users} label="Seats" value={String(vehicle.seatingCapacity)} />
               <SpecTile icon={Calendar} label="Year" value={String(vehicle.year)} />
@@ -105,7 +156,10 @@ export default async function VehicleDetailPage({ params }: PageProps) {
               <h2 className="mb-3 text-base font-semibold text-ink">Features &amp; amenities</h2>
               <div className="flex flex-wrap gap-2">
                 {vehicle.features.map((f) => (
-                  <span key={f.id} className="rounded-chip bg-surface-hover px-3 py-1.5 text-sm text-slate-700">
+                  <span
+                    key={f.id}
+                    className="rounded-chip bg-surface-hover px-3 py-1.5 text-sm text-slate-700"
+                  >
                     {f.name}
                     {f.value && <span className="text-text-faint"> · {f.value}</span>}
                   </span>
@@ -118,16 +172,25 @@ export default async function VehicleDetailPage({ params }: PageProps) {
           {(vehicle.availabilityNotes || vehicle.pricingNotes || vehicle.specialConditions) && (
             <section className="space-y-4">
               <h2 className="text-base font-semibold text-ink">Rental details</h2>
-              {vehicle.availabilityNotes && <InfoBlock title="Availability" body={vehicle.availabilityNotes} />}
-              {vehicle.pricingNotes && <InfoBlock title="Pricing notes" body={vehicle.pricingNotes} />}
-              {vehicle.specialConditions && <InfoBlock title="Special conditions" body={vehicle.specialConditions} />}
+              {vehicle.availabilityNotes && (
+                <InfoBlock title="Availability" body={vehicle.availabilityNotes} />
+              )}
+              {vehicle.pricingNotes && (
+                <InfoBlock title="Pricing notes" body={vehicle.pricingNotes} />
+              )}
+              {vehicle.specialConditions && (
+                <InfoBlock title="Special conditions" body={vehicle.specialConditions} />
+              )}
             </section>
           )}
 
           {/* Provider */}
           <Card>
             <h2 className="mb-3 text-base font-semibold text-ink">Provider</h2>
-            <Link href={`/providers/${vehicle.providerProfile.slug}`} className="group flex items-center gap-3.5">
+            <Link
+              href={`/providers/${vehicle.providerProfile.slug}`}
+              className="group flex items-center gap-3.5"
+            >
               {vehicle.providerProfile.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -170,7 +233,9 @@ export default async function VehicleDetailPage({ params }: PageProps) {
             {/* Price card */}
             <Card padding="lg" className="shadow-md">
               <div className="flex items-baseline gap-1.5">
-                <span className="font-mono text-[26px] font-semibold tracking-tight text-ink">{currency} {price}</span>
+                <span className="font-mono text-[26px] font-semibold tracking-tight text-ink">
+                  {currency} {price}
+                </span>
                 <span className="text-[13px] text-text-muted">/ day</span>
               </div>
 
@@ -210,7 +275,9 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                   whatsappNumber={vehicle.showroom?.whatsappNumber}
                 />
 
-                <p className="text-center text-xs text-text-faint">Free to inquire · No payment yet</p>
+                <p className="text-center text-xs text-text-faint">
+                  Free to inquire · No payment yet
+                </p>
               </div>
 
               {/* Showroom contact */}
@@ -278,7 +345,13 @@ function InfoBlock({ title, body }: { title: string; body: string }) {
   );
 }
 
-function ImageGallery({ images, title }: { images: ListingVehicleDetail['images']; title: string }) {
+function ImageGallery({
+  images,
+  title,
+}: {
+  images: ListingVehicleDetail['images'];
+  title: string;
+}) {
   if (images.length === 0) {
     return (
       <div className="flex aspect-[16/10] items-center justify-center rounded-card bg-surface-hover text-text-faint">
@@ -292,14 +365,21 @@ function ImageGallery({ images, title }: { images: ListingVehicleDetail['images'
       {/* Primary image */}
       <div className="aspect-[16/10] overflow-hidden rounded-card bg-surface-hover">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={images[0].url} alt={images[0].altText ?? title} className="h-full w-full object-cover" />
+        <img
+          src={images[0].url}
+          alt={images[0].altText ?? title}
+          className="h-full w-full object-cover"
+        />
       </div>
 
       {/* Thumbnails (up to 4) */}
       {images.length > 1 && (
         <div className="grid grid-cols-4 gap-2">
           {images.slice(1, 5).map((img, idx) => (
-            <div key={img.id} className="relative aspect-square overflow-hidden rounded-media bg-surface-hover">
+            <div
+              key={img.id}
+              className="relative aspect-square overflow-hidden rounded-media bg-surface-hover"
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={img.url}

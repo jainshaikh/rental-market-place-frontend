@@ -4,7 +4,7 @@ import { MobileSidebarBar } from '../../components/layout/MobileSidebarBar';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
-      <MobileSidebarBar brand="RentalMarket Admin">
+      <MobileSidebarBar brand="KerayeGo Admin">
         <AdminSidebar />
       </MobileSidebarBar>
 

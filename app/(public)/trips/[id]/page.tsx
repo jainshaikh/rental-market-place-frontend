@@ -19,11 +19,11 @@ function titleCase(s: string): string {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const res = await fetchTripById(params.id);
-  if (!res?.data) return { title: 'Trip Not Found — Rental Marketplace' };
+  if (!res?.data) return { title: 'Trip Not Found — KerayeGo' };
 
   const t = res.data;
   return {
-    title: `${titleCase(t.originCity)} → ${titleCase(t.destinationCity)} — Rental Marketplace`,
+    title: `${titleCase(t.originCity)} → ${titleCase(t.destinationCity)} — KerayeGo`,
     description: `Trip from ${titleCase(t.originCity)} to ${titleCase(t.destinationCity)} on ${new Date(t.departureAt).toLocaleDateString()}. ${getCurrencyCode(t.userVehicle?.country)} ${Number(t.pricePerSeat).toLocaleString()} per seat.`,
   };
 }
@@ -64,7 +64,12 @@ export default async function TripDetailPage({ params }: PageProps) {
             </div>
             <p className="mt-2 font-mono text-sm text-text-muted">
               Departs{' '}
-              {departure.toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              {departure.toLocaleDateString('en-AE', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })}
               {' at '}
               {departure.toLocaleTimeString('en-AE', { hour: 'numeric', minute: '2-digit' })}
             </p>
@@ -113,8 +118,15 @@ export default async function TripDetailPage({ params }: PageProps) {
               {trip.userVehicle.make} {trip.userVehicle.model}
               {trip.userVehicle.year ? ` (${trip.userVehicle.year})` : ''}
             </p>
-            {trip.userVehicle.color && <p className="mt-1 text-sm text-text-muted">{trip.userVehicle.color}</p>}
-            <RatingSummaryBadge subjectType="USER_VEHICLE" subjectId={trip.userVehicle.id} size="sm" className="mt-2" />
+            {trip.userVehicle.color && (
+              <p className="mt-1 text-sm text-text-muted">{trip.userVehicle.color}</p>
+            )}
+            <RatingSummaryBadge
+              subjectType="USER_VEHICLE"
+              subjectId={trip.userVehicle.id}
+              size="sm"
+              className="mt-2"
+            />
           </Card>
 
           {trip.notes && (
@@ -137,7 +149,12 @@ export default async function TripDetailPage({ params }: PageProps) {
                   <BadgeCheck className="h-3.5 w-3.5" />
                   Identity &amp; documents verified
                 </p>
-                <RatingSummaryBadge subjectType="USER" subjectId={trip.postedBy.id} size="sm" className="mt-1" />
+                <RatingSummaryBadge
+                  subjectType="USER"
+                  subjectId={trip.postedBy.id}
+                  size="sm"
+                  className="mt-1"
+                />
               </div>
             </div>
           </Card>
@@ -153,7 +170,9 @@ export default async function TripDetailPage({ params }: PageProps) {
           <div className="sticky top-24 space-y-3.5">
             <Card padding="lg" className="shadow-md">
               <div className="flex items-baseline gap-1.5">
-                <span className="font-mono text-[26px] font-semibold tracking-tight text-ink">{currency} {price}</span>
+                <span className="font-mono text-[26px] font-semibold tracking-tight text-ink">
+                  {currency} {price}
+                </span>
                 <span className="text-[13px] text-text-muted">/seat</span>
               </div>
               <p className="mt-1 text-[13px] text-text-muted">
@@ -172,7 +191,11 @@ export default async function TripDetailPage({ params }: PageProps) {
                     Full — no seats left
                   </Button>
                 )}
-                <WhatsAppButton phone={trip.contactNumber} message={whatsappMessage} label="WhatsApp the driver" />
+                <WhatsAppButton
+                  phone={trip.contactNumber}
+                  message={whatsappMessage}
+                  label="WhatsApp the driver"
+                />
                 <p className="mt-2.5 text-center text-xs text-text-faint">
                   The driver accepts or declines your request — you'll be notified either way
                 </p>
@@ -180,7 +203,10 @@ export default async function TripDetailPage({ params }: PageProps) {
 
               <div className="mt-4 border-t border-border-subtle pt-4 text-center">
                 <p className="mb-1 text-xs text-text-faint">Or call</p>
-                <a href={`tel:${trip.contactNumber}`} className="text-sm font-medium text-slate-700 transition-colors hover:text-brand-600">
+                <a
+                  href={`tel:${trip.contactNumber}`}
+                  className="text-sm font-medium text-slate-700 transition-colors hover:text-brand-600"
+                >
                   {trip.contactNumber}
                 </a>
               </div>

@@ -14,6 +14,7 @@ import {
   Users,
 } from 'lucide-react';
 import { cn } from '../../lib/utils/cn';
+import { Logo } from '../common/Logo';
 
 // Was eight hand-inlined SVG blobs (~90 lines) in app/(admin)/layout.tsx.
 export const ADMIN_NAV = [
@@ -41,13 +42,10 @@ export function AdminSidebar({ email, onLogout, onNavigate }: AdminSidebarProps)
     <div className="flex h-full flex-col">
       {/* Brand */}
       <div className="border-b border-white/10 px-5 py-[18px]">
-        <Link href="/admin/dashboard" onClick={onNavigate} className="group flex items-center gap-2.5">
-          <span className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] bg-brand text-[15px] font-bold text-white shadow-coral transition-transform duration-200 ease-spring group-hover:-rotate-6 group-hover:scale-105">
-            R
-          </span>
-          <span>
-            <span className="block text-[13px] font-bold leading-none text-white">RentalMarket</span>
-            <span className="mt-1 block text-[11px] font-medium leading-none text-white/40">Admin</span>
+        <Link href="/admin/dashboard" onClick={onNavigate} className="block">
+          <Logo theme="dark" className="h-6" />
+          <span className="mt-1.5 block text-[11px] font-medium leading-none text-white/40">
+            Admin
           </span>
         </Link>
       </div>

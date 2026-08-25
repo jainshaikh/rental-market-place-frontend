@@ -4,8 +4,13 @@ import { fetchAllProviders } from '../../../lib/api/server';
 import type { PublicProviderCard } from '../../../lib/api/providers.api';
 
 export const metadata: Metadata = {
-  title: 'Rental Providers — Rental Marketplace',
-  description: 'Browse all verified vehicle rental providers in Pakistan.',
+  title: 'Verified Car Rental Providers in Pakistan',
+  description:
+    'Browse verified vehicle rental providers across Karachi, Lahore, Islamabad, and other cities in Pakistan. Every provider is reviewed before listing.',
+  keywords: ['car rental companies Pakistan', 'verified car rental providers', 'vehicle hire providers'],
+  alternates: {
+    canonical: '/providers',
+  },
 };
 
 export default async function ProvidersPage({ searchParams }: { searchParams: { page?: string } }) {

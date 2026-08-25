@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BackButton } from '../../components/ui';
+import { Logo } from '../../components/common/Logo';
 
 export const metadata: Metadata = {
   title: {
     default: 'Account',
-    template: '%s | Rental Marketplace',
+    template: '%s | KerayeGo',
   },
 };
 
@@ -14,11 +15,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div className="flex min-h-screen flex-col bg-page">
       {/* Minimal header */}
       <header className="flex items-center justify-between px-6 py-6">
-        <Link href="/" className="flex w-fit items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-control bg-brand-600">
-            <span className="text-sm font-bold text-white">R</span>
-          </div>
-          <span className="text-lg font-semibold text-ink">RentalMarket</span>
+        <Link href="/" className="flex w-fit items-center">
+          <Logo className="h-7" />
         </Link>
         <BackButton />
       </header>
@@ -29,7 +27,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       <footer className="py-6 text-center text-sm text-text-muted">
         <p>
-          &copy; {new Date().getFullYear()} Rental Marketplace.{' '}
+          &copy; {new Date().getFullYear()} KerayeGo.{' '}
           <Link href="/privacy" className="hover:underline">
             Privacy
           </Link>{' '}

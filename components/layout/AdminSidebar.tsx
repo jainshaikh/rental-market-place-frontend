@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../../hooks/useAuth';
 import { cn } from '../../lib/utils/cn';
+import { Logo } from '../common/Logo';
 
 const NAV_ITEMS = [
   {
@@ -146,14 +147,9 @@ export function AdminSidebar() {
     <aside className="flex min-h-screen w-64 flex-col bg-ink">
       {/* Brand */}
       <div className="border-b border-white/10 px-5 py-[18px]">
-        <Link href="/admin/dashboard" className="flex items-center gap-2">
-          <div className="flex h-[26px] w-[26px] items-center justify-center rounded-control bg-brand-600 text-[13px] font-bold text-white">
-            R
-          </div>
-          <div>
-            <p className="text-xs font-bold leading-none text-white">RentalMarket</p>
-            <p className="mt-0.5 text-xs leading-none text-slate-500">Admin</p>
-          </div>
+        <Link href="/admin/dashboard" className="block">
+          <Logo theme="dark" className="h-6" />
+          <p className="mt-1.5 text-xs leading-none text-slate-500">Admin</p>
         </Link>
       </div>
 
