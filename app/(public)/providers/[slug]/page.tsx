@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { fetchProviderBySlug } from '../../../../lib/api/server';
+import { fetchProviderBySlug, fetchDistinctCities, fetchAllProviders } from '../../../../lib/api/server';
 import { ProviderVehiclesSection } from '../../../../components/providers/ProviderVehiclesSection';
+import { ProviderCard } from '../../../../components/providers/ProviderCard';
 import { RatingSummaryBadge } from '../../../../components/common/RatingSummaryBadge';
 import { ReviewsList } from '../../../../components/common/ReviewsList';
 
@@ -10,25 +11,133 @@ interface PageProps {
   params: { slug: string };
 }
 
+function toDisplayName(value: string): string {
+  return value
+    .split(/[\s-]+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+// Provider profile slugs and city names share this one dynamic segment (Next
+// doesn't allow two different param names — [slug] and [city] — at the same
+// route position), so we tell them apart by real data: is this string one of
+// the known cities? If so it's the city hub; otherwise it's a provider slug.
+async function isKnownCity(value: string): Promise<boolean> {
+  const res = await fetchDistinctCities();
+  const cities = res?.data ?? [];
+  return cities.some((c) => c.toLowerCase() === value.toLowerCase());
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const slug = decodeURIComponent(params.slug).toLowerCase();
+
+  if (await isKnownCity(slug)) {
+    const cityName = toDisplayName(slug);
+    const res = await fetchAllProviders(1, 1, slug);
+    const total = res?.meta?.total ?? 0;
+    return {
+      title: `Rental Providers in ${cityName} — Verified Companies`,
+      description: `Browse verified vehicle rental providers in ${cityName}, Pakistan. Every provider is reviewed before listing.`,
+      keywords: [
+        `car rental companies ${cityName}`,
+        `rental providers ${cityName}`,
+        `verified car rental ${cityName}`,
+      ],
+      alternates: { canonical: `/providers/${slug}` },
+      openGraph: {
+        title: `Rental Providers in ${cityName}`,
+        description: `Verified vehicle rental providers in ${cityName}, Pakistan.`,
+      },
+      robots: { index: total > 0, follow: true },
+    };
+  }
+
   const res = await fetchProviderBySlug(params.slug);
-  if (!res?.data) return { title: 'Provider Not Found — KerayeGo' };
+  if (!res?.data) return { title: 'Provider Not Found' };
   const p = res.data;
   const city = p.showrooms?.[0]?.city;
   return {
+    // No manual "| KerayeGo" — see the note in vehicles/[slug]/page.tsx.
     title: city
       ? `${p.businessName} — Car Rental in ${city.charAt(0).toUpperCase() + city.slice(1)}`
-      : `${p.businessName} — Vehicle Rentals | KerayeGo`,
+      : `${p.businessName} — Vehicle Rentals`,
     description:
       p.businessDescription ??
       `Browse cars for rent from ${p.businessName}${city ? ` in ${city}` : ''}. Verified provider on KerayeGo.`,
     alternates: {
       canonical: `/providers/${params.slug}`,
     },
+    openGraph: {
+      title: p.businessName,
+      description:
+        p.businessDescription ??
+        `Browse cars for rent from ${p.businessName}${city ? ` in ${city}` : ''}. Verified provider on KerayeGo.`,
+      images: p.logoUrl ? [{ url: p.logoUrl, alt: p.businessName }] : undefined,
+    },
   };
 }
 
-export default async function ProviderDetailPage({ params }: PageProps) {
+async function ProviderCityHubPage({ city }: { city: string }) {
+  const cityName = toDisplayName(city);
+  const res = await fetchAllProviders(1, 24, city);
+  const providers = res?.data ?? [];
+  const total = res?.meta?.total ?? 0;
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: '/' },
+      { '@type': 'ListItem', position: 2, name: 'Providers', item: '/providers' },
+      { '@type': 'ListItem', position: 3, name: cityName, item: `/providers/${city}` },
+    ],
+  };
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+
+      <nav className="mb-5 flex items-center gap-2 text-sm text-slate-400">
+        <Link href="/providers" className="hover:text-slate-600">
+          Providers
+        </Link>
+        <span>/</span>
+        <span className="text-slate-700">{cityName}</span>
+      </nav>
+
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-900">Rental Providers in {cityName}</h1>
+        <p className="mt-2 text-slate-500">
+          {total > 0
+            ? `${total} verified provider${total !== 1 ? 's' : ''} in ${cityName}`
+            : `No providers listed in ${cityName} yet — check back soon, or browse other cities.`}
+        </p>
+      </div>
+
+      {providers.length > 0 ? (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {providers.map((p) => (
+            <ProviderCard key={p.id} provider={p} />
+          ))}
+        </div>
+      ) : (
+        <Link href="/providers" className="text-sm font-semibold text-primary hover:underline">
+          Browse all providers
+        </Link>
+      )}
+    </div>
+  );
+}
+
+export default async function ProviderDetailOrCityPage({ params }: PageProps) {
+  const slug = decodeURIComponent(params.slug).toLowerCase();
+  if (await isKnownCity(slug)) {
+    return <ProviderCityHubPage city={slug} />;
+  }
+
   const res = await fetchProviderBySlug(params.slug);
   if (!res?.data) notFound();
 

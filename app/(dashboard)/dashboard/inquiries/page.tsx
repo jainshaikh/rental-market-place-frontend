@@ -7,6 +7,7 @@ import type { BookingRequest, BookingStatus } from '../../../../lib/api/bookings
 import { cn } from '../../../../lib/utils/cn';
 import { getCurrencyCode } from '../../../../lib/utils/currency';
 import { formatDurationLabel } from '../../../../lib/utils/rentalDuration';
+import { getVehicleUrl } from '../../../../lib/utils/vehicleUrl';
 import { WhatsAppButton } from '../../../../components/ui';
 
 const STATUS_META: Record<BookingStatus, { label: string; color: string }> = {
@@ -77,7 +78,7 @@ export default function UserInquiriesPage() {
             Browse vehicles and send an inquiry to get started.
           </p>
           <Link
-            href="/vehicles"
+            href="/rent-a-car"
             className="mt-4 inline-block text-sm font-semibold text-primary hover:underline"
           >
             Browse vehicles
@@ -169,7 +170,7 @@ function UserInquiryCard({ inquiry, onCancel }: { inquiry: BookingRequest; onCan
     <div className="rounded-xl border border-slate-200 bg-white p-5">
       <div className="flex gap-4">
         {/* Thumbnail */}
-        <Link href={`/vehicles/${inquiry.vehicle.slug}`} className="flex-shrink-0">
+        <Link href={getVehicleUrl(inquiry.vehicle)} className="flex-shrink-0">
           <div className="h-14 w-20 overflow-hidden rounded-lg bg-slate-100">
             {thumb ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -193,7 +194,7 @@ function UserInquiryCard({ inquiry, onCancel }: { inquiry: BookingRequest; onCan
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
               <Link
-                href={`/vehicles/${inquiry.vehicle.slug}`}
+                href={getVehicleUrl(inquiry.vehicle)}
                 className="text-sm font-semibold text-slate-900 hover:text-primary"
               >
                 {inquiry.vehicle.title}

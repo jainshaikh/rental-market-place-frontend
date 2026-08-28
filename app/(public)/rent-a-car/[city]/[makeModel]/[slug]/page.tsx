@@ -12,30 +12,41 @@ import {
   Settings2,
   Users,
 } from 'lucide-react';
-import { fetchVehicleBySlug } from '../../../../lib/api/server';
-import type { ListingVehicleDetail } from '../../../../lib/api/listings.api';
-import { getCurrencyCode } from '../../../../lib/utils/currency';
-import { getAvailableDurations, getUnitPrice } from '../../../../lib/utils/rentalDuration';
-import { Card } from '../../../../components/ui';
-import { RatingSummaryBadge } from '../../../../components/common/RatingSummaryBadge';
-import { ReviewsList } from '../../../../components/common/ReviewsList';
-import { InquiryCta } from '../../../../components/vehicles/InquiryCta';
+import { fetchVehicleBySlug, fetchRatingSummary } from '../../../../../../lib/api/server';
+import type { ListingVehicleDetail } from '../../../../../../lib/api/listings.api';
+import { getCurrencyCode } from '../../../../../../lib/utils/currency';
+import { getAvailableDurations, getUnitPrice } from '../../../../../../lib/utils/rentalDuration';
+import { getVehicleUrl } from '../../../../../../lib/utils/vehicleUrl';
+import { Card } from '../../../../../../components/ui';
+import { RatingSummaryBadge } from '../../../../../../components/common/RatingSummaryBadge';
+import { ReviewsList } from '../../../../../../components/common/ReviewsList';
+import { InquiryCta } from '../../../../../../components/vehicles/InquiryCta';
 
 interface PageProps {
-  params: { slug: string };
+  params: { city: string; makeModel: string; slug: string };
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const res = await fetchVehicleBySlug(params.slug);
-  if (!res?.data) return { title: 'Vehicle Not Found — KerayeGo' };
+  if (!res?.data) return { title: 'Vehicle Not Found' };
 
   const v = res.data;
   const price = Number(v.pricePerDay).toLocaleString();
   const currency = getCurrencyCode(v.showroom?.country);
   const location = v.showroom?.city ?? v.locationText ?? null;
+  // Canonical is derived from the vehicle's own real data, not the URL's
+  // [city]/[makeModel] segments — if they ever mismatch (a stale/shared
+  // link, or the vehicle's listing changed), the canonical still points at
+  // the correct permanent URL for this vehicle. Same pattern as the carpool
+  // trip detail page.
+  const canonicalUrl = getVehicleUrl(v, location);
 
   return {
-    title: `${v.title} — ${currency} ${price}/day | KerayeGo`,
+    // No manual "| KerayeGo" here — the root layout's title.template already
+    // appends it to every descendant page; adding it here rendered as
+    // "... | KerayeGo | KerayeGo" (found while testing the carpool/city-make
+    // pages, which had copied this same pattern).
+    title: `${v.title} — ${currency} ${price}/day`,
     description: [
       v.title,
       `${v.year} · ${v.transmission} · ${v.fuelType}`,
@@ -51,7 +62,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       `rent ${v.make} ${v.model}`,
     ].filter((k): k is string => !!k),
     alternates: {
-      canonical: `/vehicles/${v.slug}`,
+      canonical: canonicalUrl,
     },
     openGraph: {
       title: v.title,
@@ -69,6 +80,12 @@ export default async function VehicleDetailPage({ params }: PageProps) {
   const price = Number(vehicle.pricePerDay).toLocaleString();
   const currency = getCurrencyCode(vehicle.showroom?.country);
   const availableDurations = getAvailableDurations(vehicle);
+  const location = vehicle.showroom?.city ?? vehicle.locationText ?? null;
+  const cityDisplay = location ? location.charAt(0).toUpperCase() + location.slice(1) : null;
+  const inquireHref = `${getVehicleUrl(vehicle, location)}/inquire`;
+
+  const ratingRes = await fetchRatingSummary('VEHICLE', vehicle.id);
+  const rating = ratingRes?.data;
 
   const productJsonLd = {
     '@context': 'https://schema.org',
@@ -77,6 +94,19 @@ export default async function VehicleDetailPage({ params }: PageProps) {
     description: `${vehicle.year} ${vehicle.make} ${vehicle.model} — ${vehicle.transmission}, ${vehicle.fuelType}, ${vehicle.seatingCapacity} seats.`,
     image: vehicle.images.map((img) => img.url),
     brand: { '@type': 'Brand', name: vehicle.make },
+    // Only attach aggregateRating when there's at least one real review —
+    // Google's guidelines disallow self-assigned/placeholder ratings.
+    ...(rating && rating.count > 0 && rating.average !== null
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: rating.average,
+            reviewCount: rating.count,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
     offers: {
       '@type': 'Offer',
       businessFunction: 'http://purl.org/goodrelations/v1#LeaseOut',
@@ -91,17 +121,46 @@ export default async function VehicleDetailPage({ params }: PageProps) {
     },
   };
 
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: '/' },
+      { '@type': 'ListItem', position: 2, name: 'Rent a Car', item: '/rent-a-car' },
+      ...(cityDisplay
+        ? [
+            {
+              '@type': 'ListItem',
+              position: 3,
+              name: cityDisplay,
+              item: `/rent-a-car/${encodeURIComponent(location as string)}`,
+            },
+          ]
+        : []),
+      {
+        '@type': 'ListItem',
+        position: cityDisplay ? 4 : 3,
+        name: vehicle.title,
+        item: getVehicleUrl(vehicle, location),
+      },
+    ],
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
 
       {/* Breadcrumb */}
       <nav className="mb-4 flex items-center gap-2 text-xs text-text-muted">
-        <Link href="/vehicles" className="hover:text-slate-700">
-          Vehicles
+        <Link href="/rent-a-car" className="hover:text-slate-700">
+          Rent a Car
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-border-strong" />
         <span className="truncate font-semibold text-ink">{vehicle.title}</span>
@@ -270,7 +329,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
               {/* Contact CTA */}
               <div className="mt-5 space-y-2.5">
                 <InquiryCta
-                  vehicleSlug={vehicle.slug}
+                  inquireHref={inquireHref}
                   vehicleTitle={vehicle.title}
                   whatsappNumber={vehicle.showroom?.whatsappNumber}
                 />

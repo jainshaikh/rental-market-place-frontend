@@ -48,7 +48,7 @@ export default function DashboardPage() {
         <h2 className="text-sm font-semibold text-slate-700 mb-3">Quick actions</h2>
         <div className="flex flex-col gap-2">
           <Link
-            href="/vehicles"
+            href="/rent-a-car"
             className="text-sm text-primary hover:underline"
           >
             Browse vehicles →

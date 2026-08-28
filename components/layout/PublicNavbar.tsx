@@ -10,9 +10,9 @@ import { cn } from '../../lib/utils/cn';
 import { Logo } from '../common/Logo';
 
 const NAV_LINKS = [
-  { href: '/vehicles', label: 'Browse Vehicles' },
+  { href: '/rent-a-car', label: 'Rent a Car' },
   { href: '/providers', label: 'Providers' },
-  { href: '/trips', label: 'Intercity Trips' },
+  { href: '/carpool', label: 'Carpool' },
 ];
 
 export function PublicNavbar() {

@@ -42,8 +42,10 @@ const nextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           {
+            // geolocation=(self) — the homepage's "use my location" city
+            // detection needs this; it was previously blocked outright.
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
+            value: 'camera=(), microphone=(), geolocation=(self)',
           },
         ],
       },
@@ -61,6 +63,30 @@ const nextConfig = {
         source: '/admin',
         destination: '/admin/dashboard',
         permanent: false,
+      },
+      // URL rename, 2026-08-28: /car-rental -> /rent-a-car, /trips -> /carpool
+      // hub. Both were only briefly live pre-launch (not yet indexed), but
+      // these cost nothing and protect anyone who bookmarked/shared a link
+      // during that window.
+      {
+        source: '/car-rental/:path*',
+        destination: '/rent-a-car/:path*',
+        permanent: true,
+      },
+      {
+        source: '/trips',
+        destination: '/carpool',
+        permanent: true,
+      },
+      // URL rename, 2026-08-28: /vehicles -> /rent-a-car (nav + browse-all
+      // page). Individual /vehicles/:slug deep links aren't redirectable
+      // this way — the new URL needs the vehicle's city/make/model, which a
+      // static redirect can't look up — same limitation as /trips/:id above.
+      // Not indexed yet, so the risk is negligible.
+      {
+        source: '/vehicles',
+        destination: '/rent-a-car',
+        permanent: true,
       },
     ];
   },

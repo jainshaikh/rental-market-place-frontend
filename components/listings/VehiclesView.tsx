@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { SearchX, SlidersHorizontal } from 'lucide-react';
@@ -39,6 +39,11 @@ interface VehiclesViewProps {
   initialData: ListingsResponse | null;
   makes: string[];
   cities: string[];
+  /** Geolocation-detected city (see HeroSearch) — applied once, client-side,
+   * only when the URL doesn't already specify a city. A `useRef` guard keeps
+   * it from reapplying if the visitor then explicitly clears the filter
+   * within the same page visit. */
+  defaultCity?: string;
 }
 
 function parseSearchParams(searchParams: URLSearchParams): ListingFilters {
@@ -56,11 +61,12 @@ function parseSearchParams(searchParams: URLSearchParams): ListingFilters {
   };
 }
 
-export function VehiclesView({ initialData, makes, cities }: VehiclesViewProps) {
+export function VehiclesView({ initialData, makes, cities, defaultCity }: VehiclesViewProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
+  const appliedDefault = useRef(false);
 
   const filters = parseSearchParams(searchParams);
 
@@ -78,6 +84,15 @@ export function VehiclesView({ initialData, makes, cities }: VehiclesViewProps) 
     },
     [router, pathname, searchParams],
   );
+
+  useEffect(() => {
+    if (appliedDefault.current) return;
+    appliedDefault.current = true;
+    if (defaultCity && !searchParams.get('city')) {
+      updateFilter('city', defaultCity);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { data, isFetching } = useQuery({
     queryKey: ['listings', filters],

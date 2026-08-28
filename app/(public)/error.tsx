@@ -28,7 +28,7 @@ export default function PublicError({
         >
           Try again
         </button>
-        <Link href="/vehicles" className="px-5 py-2 border border-slate-200 text-slate-700 font-semibold text-sm rounded-lg hover:bg-slate-50 transition-colors">
+        <Link href="/rent-a-car" className="px-5 py-2 border border-slate-200 text-slate-700 font-semibold text-sm rounded-lg hover:bg-slate-50 transition-colors">
           Browse vehicles
         </Link>
       </div>

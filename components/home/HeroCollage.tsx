@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { Image as ImageIcon } from 'lucide-react';
 
 interface HeroCollageProps {
@@ -19,8 +20,7 @@ const WhatsAppGlyph = () => (
 
 const Tile = ({ src, alt }: { src?: string | null; alt: string }) =>
   src ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} className="h-full w-full object-cover" />
+    <Image src={src} alt={alt} fill sizes="330px" className="object-cover" />
   ) : (
     <div className="flex h-full w-full items-center justify-center bg-white/[0.06] text-white/25">
       <ImageIcon className="h-6 w-6" />

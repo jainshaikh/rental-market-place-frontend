@@ -26,20 +26,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const displayName = toDisplayName(city);
 
   return {
-    title: `Car Rental in ${displayName} — Rent a Vehicle Today`,
+    title: `Rent a Car in ${displayName} — Compare Cars & Prices`,
     description: `Find a car for rent in ${displayName} from verified providers. Compare daily and weekly rates, message the owner directly, and book with no hidden fees.`,
     keywords: [
-      `car for rent in ${city}`,
-      `${city} car rental`,
-      `rent a car in ${displayName}`,
-      `vehicle hire ${displayName}`,
+      `rent a car in ${city}`,
+      `rent a car ${displayName}`,
       `car rental ${displayName}`,
+      `car for rent in ${city}`,
+      `vehicle hire ${displayName}`,
     ],
     alternates: {
-      canonical: `/car-rental/${encodeURIComponent(city)}`,
+      canonical: `/rent-a-car/${encodeURIComponent(city)}`,
     },
     openGraph: {
-      title: `Car Rental in ${displayName}`,
+      title: `Rent a Car in ${displayName}`,
       description: `Compare cars for rent in ${displayName} from verified local providers.`,
     },
   };
@@ -58,13 +58,19 @@ export default async function CityCarRentalPage({ params }: PageProps) {
   const total = listingsRes?.meta?.total ?? 0;
   const otherCities = (citiesRes?.data ?? []).filter((c) => c.toLowerCase() !== city).slice(0, 8);
 
+  // Derived from the same fetched batch, not a separate endpoint — a real
+  // (if partial) reflection of what's actually in this city, not a fabricated
+  // list. Links to /rent-a-car/[city]/[make(-model)], which does its own
+  // fresh fetch.
+  const popularMakes = Array.from(new Set(vehicles.map((v) => v.make.toLowerCase()))).slice(0, 8);
+
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: '/' },
-      { '@type': 'ListItem', position: 2, name: 'Car Rental', item: '/vehicles' },
-      { '@type': 'ListItem', position: 3, name: displayName, item: `/car-rental/${encodeURIComponent(city)}` },
+      { '@type': 'ListItem', position: 2, name: 'Rent a Car', item: '/rent-a-car' },
+      { '@type': 'ListItem', position: 3, name: displayName, item: `/rent-a-car/${encodeURIComponent(city)}` },
     ],
   };
 
@@ -81,8 +87,8 @@ export default async function CityCarRentalPage({ params }: PageProps) {
           Home
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-border-strong" />
-        <Link href="/vehicles" className="hover:text-slate-700">
-          Vehicles
+        <Link href="/rent-a-car" className="hover:text-slate-700">
+          Rent a Car
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-border-strong" />
         <span className="font-semibold text-ink">{displayName}</span>
@@ -95,7 +101,7 @@ export default async function CityCarRentalPage({ params }: PageProps) {
           {displayName}, Pakistan
         </div>
         <h1 className="text-[26px] font-bold tracking-tight text-ink">
-          Car Rental in {displayName}
+          Rent a Car in {displayName}
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-text-muted">
           Looking for a car for rent in {displayName}? Browse vehicles from verified local
@@ -115,7 +121,7 @@ export default async function CityCarRentalPage({ params }: PageProps) {
 
           <div className="mt-8 text-center">
             <Link
-              href={`/vehicles?city=${city}`}
+              href={`/rent-a-car?city=${city}`}
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:underline"
             >
               More filters &amp; sort options for {displayName}
@@ -129,11 +135,28 @@ export default async function CityCarRentalPage({ params }: PageProps) {
             No vehicles listed in {displayName} yet — check back soon, or browse other cities.
           </p>
           <Link
-            href="/vehicles"
+            href="/rent-a-car"
             className="mt-4 inline-block text-sm font-semibold text-brand-700 hover:underline"
           >
             Browse all vehicles
           </Link>
+        </div>
+      )}
+
+      {popularMakes.length > 0 && (
+        <div className="mt-14 border-t border-border-subtle pt-8">
+          <h2 className="text-sm font-semibold text-ink">Popular makes in {displayName}</h2>
+          <div className="mt-3 flex flex-wrap gap-2.5">
+            {popularMakes.map((make) => (
+              <Link
+                key={make}
+                href={`/rent-a-car/${encodeURIComponent(city)}/${encodeURIComponent(make)}`}
+                className="inline-flex h-9 items-center rounded-control border border-border-subtle bg-page px-3.5 text-sm font-medium text-ink transition-colors hover:border-brand-600 hover:text-brand-700"
+              >
+                {make.charAt(0).toUpperCase() + make.slice(1)}
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 
@@ -144,7 +167,7 @@ export default async function CityCarRentalPage({ params }: PageProps) {
             {otherCities.map((c) => (
               <Link
                 key={c}
-                href={`/car-rental/${encodeURIComponent(c)}`}
+                href={`/rent-a-car/${encodeURIComponent(c)}`}
                 className="inline-flex h-9 items-center rounded-control border border-border-subtle bg-page px-3.5 text-sm font-medium text-ink transition-colors hover:border-brand-600 hover:text-brand-700"
               >
                 {toDisplayName(c)}

@@ -6,21 +6,21 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { CheckCircle2, ChevronRight, Image as ImageIcon, Minus, Plus } from 'lucide-react';
-import { useAuth } from '../../../../../hooks/useAuth';
-import { useCreateBooking } from '../../../../../hooks/useBookings';
+import { useAuth } from '../../../../../../../hooks/useAuth';
+import { useCreateBooking } from '../../../../../../../hooks/useBookings';
 import { useQuery } from '@tanstack/react-query';
-import { listingsApi } from '../../../../../lib/api/listings.api';
-import { getCurrencyCode } from '../../../../../lib/utils/currency';
-import { getAvailableDurations, getUnitPrice, computeReturnDate } from '../../../../../lib/utils/rentalDuration';
+import { listingsApi } from '../../../../../../../lib/api/listings.api';
+import { getCurrencyCode } from '../../../../../../../lib/utils/currency';
+import { getAvailableDurations, getUnitPrice, computeReturnDate } from '../../../../../../../lib/utils/rentalDuration';
 import {
   createBookingSchema,
   type CreateBookingFormValues,
-} from '../../../../../lib/validations/booking.schema';
-import { Button, Card, Input, Textarea } from '../../../../../components/ui';
-import { cn } from '../../../../../lib/utils/cn';
+} from '../../../../../../../lib/validations/booking.schema';
+import { Button, Card, Input, Textarea } from '../../../../../../../components/ui';
+import { cn } from '../../../../../../../lib/utils/cn';
 
 export default function InquirePage() {
-  const params = useParams<{ slug: string }>();
+  const params = useParams<{ city: string; makeModel: string; slug: string }>();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const createBooking = useCreateBooking();
@@ -49,7 +49,7 @@ export default function InquirePage() {
 
   // Redirect unauthenticated users to login
   if (!authLoading && !user) {
-    router.replace(`/login?redirect=/vehicles/${params.slug}/inquire`);
+    router.replace(`/login?redirect=/rent-a-car/${params.city}/${params.makeModel}/${params.slug}/inquire`);
     return null;
   }
 
@@ -65,7 +65,7 @@ export default function InquirePage() {
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
         <p className="text-slate-600">Vehicle not found.</p>
-        <Link href="/vehicles" className="mt-4 inline-block text-sm text-brand-600 hover:underline">
+        <Link href="/rent-a-car" className="mt-4 inline-block text-sm text-brand-600 hover:underline">
           Browse all vehicles
         </Link>
       </div>
@@ -99,7 +99,7 @@ export default function InquirePage() {
           <Link href="/dashboard/inquiries">
             <Button variant="primary">View my inquiries</Button>
           </Link>
-          <Link href="/vehicles">
+          <Link href="/rent-a-car">
             <Button variant="secondary">Browse more vehicles</Button>
           </Link>
         </div>
@@ -134,12 +134,12 @@ export default function InquirePage() {
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
       {/* Breadcrumb */}
       <nav className="mb-5 flex items-center gap-2 text-xs text-text-muted">
-        <Link href="/vehicles" className="hover:text-slate-700">
-          Vehicles
+        <Link href="/rent-a-car" className="hover:text-slate-700">
+          Rent a Car
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-border-strong" />
         <Link
-          href={`/vehicles/${params.slug}`}
+          href={`/rent-a-car/${params.city}/${params.makeModel}/${params.slug}`}
           className="max-w-[160px] truncate hover:text-slate-700"
         >
           {vehicle.title}

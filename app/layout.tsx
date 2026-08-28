@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Outfit, IBM_Plex_Mono } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { QueryProvider } from '../lib/providers/query-provider';
@@ -67,6 +67,10 @@ export const metadata: Metadata = {
     icon: '/favicon.png',
     apple: '/apple-touch-icon.png',
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#1A0F14',
 };
 
 const organizationJsonLd = {

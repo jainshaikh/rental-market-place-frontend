@@ -3,14 +3,14 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, BadgeCheck, ChevronRight } from 'lucide-react';
-import { fetchTripById } from '../../../../lib/api/server';
-import { getCurrencyCode } from '../../../../lib/utils/currency';
-import { Button, Card, WhatsAppButton } from '../../../../components/ui';
-import { RatingSummaryBadge } from '../../../../components/common/RatingSummaryBadge';
-import { ReviewsList } from '../../../../components/common/ReviewsList';
+import { fetchTripById } from '../../../../../lib/api/server';
+import { getCurrencyCode } from '../../../../../lib/utils/currency';
+import { Button, Card, WhatsAppButton } from '../../../../../components/ui';
+import { RatingSummaryBadge } from '../../../../../components/common/RatingSummaryBadge';
+import { ReviewsList } from '../../../../../components/common/ReviewsList';
 
 interface PageProps {
-  params: { id: string };
+  params: { route: string; id: string };
 }
 
 function titleCase(s: string): string {
@@ -19,12 +19,27 @@ function titleCase(s: string): string {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const res = await fetchTripById(params.id);
-  if (!res?.data) return { title: 'Trip Not Found — KerayeGo' };
+  if (!res?.data) return { title: 'Trip Not Found' };
 
   const t = res.data;
+  const description = `Trip from ${titleCase(t.originCity)} to ${titleCase(t.destinationCity)} on ${new Date(t.departureAt).toLocaleDateString()}. ${getCurrencyCode(t.userVehicle?.country)} ${Number(t.pricePerSeat).toLocaleString()} per seat.`;
+  const coverImage = t.userVehicle?.images?.[0]?.url;
+  // Canonical is derived from the trip's own live route, not the URL's
+  // [route] segment — if they ever mismatch (a stale/shared link), the
+  // canonical still points at the correct permanent URL for this trip.
+  const canonicalRoute = `${t.originCity.toLowerCase()}-to-${t.destinationCity.toLowerCase()}`;
+
   return {
-    title: `${titleCase(t.originCity)} → ${titleCase(t.destinationCity)} — KerayeGo`,
-    description: `Trip from ${titleCase(t.originCity)} to ${titleCase(t.destinationCity)} on ${new Date(t.departureAt).toLocaleDateString()}. ${getCurrencyCode(t.userVehicle?.country)} ${Number(t.pricePerSeat).toLocaleString()} per seat.`,
+    title: `${titleCase(t.originCity)} → ${titleCase(t.destinationCity)}`,
+    description,
+    alternates: {
+      canonical: `/carpool/${canonicalRoute}/${t.id}`,
+    },
+    openGraph: {
+      title: `${titleCase(t.originCity)} → ${titleCase(t.destinationCity)}`,
+      description,
+      images: coverImage ? [{ url: coverImage, alt: `${t.userVehicle.make} ${t.userVehicle.model}` }] : undefined,
+    },
   };
 }
 
@@ -36,19 +51,50 @@ export default async function TripDetailPage({ params }: PageProps) {
   const departure = new Date(trip.departureAt);
   const price = Number(trip.pricePerSeat).toLocaleString();
   const currency = getCurrencyCode(trip.userVehicle?.country);
+  const routeSlug = `${trip.originCity.toLowerCase()}-to-${trip.destinationCity.toLowerCase()}`;
 
   const whatsappMessage = `Hi, I'm interested in your trip from ${titleCase(trip.originCity)} to ${titleCase(trip.destinationCity)} on ${departure.toLocaleString('en-AE', { dateStyle: 'medium', timeStyle: 'short' })}. Is a seat still available?`;
 
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: '/' },
+      { '@type': 'ListItem', position: 2, name: 'Carpool', item: '/carpool' },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: `${titleCase(trip.originCity)} → ${titleCase(trip.destinationCity)}`,
+        item: `/carpool/${routeSlug}`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 4,
+        name: departure.toLocaleDateString('en-AE', { day: 'numeric', month: 'short' }),
+        item: `/carpool/${routeSlug}/${trip.id}`,
+      },
+    ],
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+
       {/* Breadcrumb */}
       <nav className="mb-4 flex items-center gap-2 text-xs text-text-muted">
-        <Link href="/trips" className="hover:text-slate-700">
-          Trips
+        <Link href="/carpool" className="hover:text-slate-700">
+          Carpool
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-border-strong" />
+        <Link href={`/carpool/${routeSlug}`} className="hover:text-slate-700">
+          {titleCase(trip.originCity)} → {titleCase(trip.destinationCity)}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-border-strong" />
         <span className="truncate font-semibold text-ink">
-          {titleCase(trip.originCity)} → {titleCase(trip.destinationCity)}
+          {departure.toLocaleDateString('en-AE', { day: 'numeric', month: 'short' })}
         </span>
       </nav>
 
@@ -181,7 +227,7 @@ export default async function TripDetailPage({ params }: PageProps) {
 
               <div className="mt-5 space-y-2.5">
                 {trip.availableSeats > 0 ? (
-                  <Link href={`/trips/${trip.id}/inquire`} className="block">
+                  <Link href={`/carpool/${routeSlug}/${trip.id}/inquire`} className="block">
                     <Button variant="primary" size="lg" className="w-full">
                       Request seats
                     </Button>

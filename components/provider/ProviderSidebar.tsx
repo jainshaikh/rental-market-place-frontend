@@ -125,7 +125,7 @@ export function ProviderSidebar() {
           Home
         </Link>
         <Link
-          href="/vehicles"
+          href="/rent-a-car"
           className="flex items-center gap-[11px] rounded-control px-3 py-2.5 text-[13px] text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
         >
           <Search className="h-[17px] w-[17px]" />

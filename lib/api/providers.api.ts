@@ -145,9 +145,9 @@ export const providersApi = {
   },
 
   // Public directory
-  getAllPublic: async (page = 1, limit = 12): Promise<ProvidersListResponse> => {
+  getAllPublic: async (page = 1, limit = 12, city?: string): Promise<ProvidersListResponse> => {
     const res = await apiClient.get<ApiResponse<PublicProviderCard[]>>('/providers', {
-      params: { page, limit },
+      params: { page, limit, city: city || undefined },
     });
     return { data: res.data.data, meta: res.data.meta as PaginationMeta };
   },

@@ -6,7 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { Button, Modal, WhatsAppButton } from '../ui';
 
 interface InquiryCtaProps {
-  vehicleSlug: string;
+  inquireHref: string;
   vehicleTitle: string;
   whatsappNumber?: string | null;
 }
@@ -18,10 +18,9 @@ interface InquiryCtaProps {
  * catches that case here instead, explains why, and offers WhatsApp as a
  * no-account alternative right there rather than making them guess.
  */
-export function InquiryCta({ vehicleSlug, vehicleTitle, whatsappNumber }: InquiryCtaProps) {
+export function InquiryCta({ inquireHref, vehicleTitle, whatsappNumber }: InquiryCtaProps) {
   const { isAuthenticated, isLoading } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const inquireHref = `/vehicles/${vehicleSlug}/inquire`;
   const whatsappMessage = `Hi, I'm interested in renting the ${vehicleTitle}. Could you please share more details?`;
 
   return (

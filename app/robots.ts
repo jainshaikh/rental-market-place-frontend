@@ -7,7 +7,15 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/vehicles', '/vehicles/', '/car-rental/', '/providers', '/providers/', '/trips', '/trips/'],
+        allow: [
+          '/',
+          '/rent-a-car',
+          '/rent-a-car/',
+          '/providers',
+          '/providers/',
+          '/carpool',
+          '/carpool/',
+        ],
         disallow: [
           '/admin/',
           '/provider/',
@@ -18,6 +26,8 @@ export default function robots(): MetadataRoute.Robots {
           '/forgot-password',
           '/reset-password',
           '/verify-email',
+          '/rent-a-car/*/*/*/inquire',
+          '/carpool/*/*/inquire',
         ],
       },
     ],

@@ -19,15 +19,11 @@ const STATUS_LABEL: Partial<Record<TripInquiry['status'], string>> = {
   REJECTED: 'Not accepted',
 };
 
-interface MyTripInquiriesListProps {
-  tripDetailBasePath: string; // e.g. '/trips' (public detail page — same for both roles)
-}
-
 // Rider's own sent trip requests. Shared between the customer (dashboard) and
 // provider portal, mirroring how MyTripDetail/MyTripsList are shared — a trip
 // poster can be either an ordinary USER or a PROVIDER, and either can also be
 // a rider requesting a seat on someone else's trip.
-export function MyTripInquiriesList({ tripDetailBasePath }: MyTripInquiriesListProps) {
+export function MyTripInquiriesList() {
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [cancelId, setCancelId] = useState<string | null>(null);
@@ -60,7 +56,7 @@ export function MyTripInquiriesList({ tripDetailBasePath }: MyTripInquiriesListP
           icon={MessageSquareOff}
           title="No trip requests yet"
           description="Browse trips and request a seat to get started."
-          action={{ label: 'Browse trips', onClick: () => router.push('/trips') }}
+          action={{ label: 'Browse trips', onClick: () => router.push('/carpool') }}
         />
       ) : (
         <div className={cn('space-y-3', isFetching && 'opacity-70 transition-opacity')}>
@@ -74,7 +70,7 @@ export function MyTripInquiriesList({ tripDetailBasePath }: MyTripInquiriesListP
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <Link
-                      href={`${tripDetailBasePath}/${inquiry.trip.id}`}
+                      href={`/carpool/${inquiry.trip.originCity.toLowerCase()}-to-${inquiry.trip.destinationCity.toLowerCase()}/${inquiry.trip.id}`}
                       className="group inline-flex items-center gap-1.5 text-sm font-semibold text-ink transition-colors hover:text-brand-700"
                     >
                       {titleCase(inquiry.trip.originCity)}

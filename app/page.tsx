@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { BadgeCheck, MessageSquare, Tag, Zap, ArrowRight } from 'lucide-react';
 import {
   fetchFeaturedListings,
@@ -50,12 +51,18 @@ const TRUST_SIGNALS = [
 ];
 
 export default async function HomePage() {
+  // Set client-side (js-cookie) once "use my location"/geolocation resolves
+  // a city — reading it here lets the server-rendered homepage personalize
+  // around it. HeroSearch calls router.refresh() right after setting it, so
+  // this re-runs with the new value instead of waiting for a hard reload.
+  const preferredCity = cookies().get('preferredCity')?.value;
+
   // Both /listings and /providers return meta.total, so the two headline
   // counters are real numbers — limit=1 keeps the payload tiny since we only
   // want the count. There is no stats endpoint; if you add one, swap these two
   // calls for it rather than fetching a page of rows to read its total.
   const [featuredRes, citiesRes, listingsRes, providersRes] = await Promise.all([
-    fetchFeaturedListings(6),
+    fetchFeaturedListings(6, preferredCity),
     fetchDistinctCities(),
     fetchListings({ limit: '1' }),
     fetchAllProviders(1, 1),
@@ -63,6 +70,10 @@ export default async function HomePage() {
 
   const featured: ListingVehicleCard[] = featuredRes?.data ?? [];
   const cities: string[] = citiesRes?.data ?? [];
+  const featuredCityLabel =
+    preferredCity && featured.some((v) => v.showroom?.city?.toLowerCase() === preferredCity.toLowerCase())
+      ? preferredCity.charAt(0).toUpperCase() + preferredCity.slice(1)
+      : null;
 
   const vehicleCount = listingsRes?.meta?.total ?? 0;
   const providerCount = providersRes?.meta?.total ?? 0;
@@ -118,7 +129,7 @@ export default async function HomePage() {
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link
-                href="/vehicles"
+                href="/rent-a-car"
                 className="inline-flex h-[52px] items-center rounded-control bg-brand px-7 text-[15px] font-semibold text-white shadow-coral transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:shadow-coral-lg active:translate-y-0 active:scale-[0.98]"
               >
                 Browse all vehicles
@@ -172,14 +183,16 @@ export default async function HomePage() {
                   Featured
                 </p>
                 <h2 className="text-[28px] font-bold tracking-[-0.038em] text-ink">
-                  Hand-picked vehicles
+                  {featuredCityLabel ? `Hand-picked vehicles in ${featuredCityLabel}` : 'Hand-picked vehicles'}
                 </h2>
                 <p className="mt-2 text-sm text-text-muted">
-                  Chosen from our highest-rated providers
+                  {featuredCityLabel
+                    ? `Chosen from our highest-rated providers near you`
+                    : 'Chosen from our highest-rated providers'}
                 </p>
               </div>
               <Link
-                href="/vehicles"
+                href={featuredCityLabel ? `/rent-a-car/${preferredCity}` : '/rent-a-car'}
                 className="group inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700"
               >
                 View all
@@ -212,7 +225,7 @@ export default async function HomePage() {
               {cities.slice(0, 10).map((city, i) => (
                 <Reveal key={city} delay={i * 35}>
                   <Link
-                    href={`/car-rental/${encodeURIComponent(city)}`}
+                    href={`/rent-a-car/${encodeURIComponent(city)}`}
                     className="inline-flex h-10 items-center rounded-control border border-border-subtle bg-page px-4 text-sm font-medium text-ink transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:border-brand-600 hover:text-brand-700 hover:shadow-sm active:translate-y-0"
                   >
                     {city.charAt(0).toUpperCase() + city.slice(1)}
@@ -257,14 +270,14 @@ export default async function HomePage() {
           </div>
           <p>&copy; {new Date().getFullYear()} KerayeGo. All rights reserved.</p>
           <div className="flex gap-5">
-            <Link href="/vehicles" className="transition-colors hover:text-brand-700">
+            <Link href="/rent-a-car" className="transition-colors hover:text-brand-700">
               Browse
             </Link>
             <Link href="/providers" className="transition-colors hover:text-brand-700">
               Providers
             </Link>
-            <Link href="/trips" className="transition-colors hover:text-brand-700">
-              Trips
+            <Link href="/carpool" className="transition-colors hover:text-brand-700">
+              Carpool
             </Link>
             <Link href="/login" className="transition-colors hover:text-brand-700">
               Sign in

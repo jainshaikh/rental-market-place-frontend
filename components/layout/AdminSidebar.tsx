@@ -193,7 +193,7 @@ export function AdminSidebar() {
           Home
         </Link>
         <Link
-          href="/vehicles"
+          href="/rent-a-car"
           className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-100"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

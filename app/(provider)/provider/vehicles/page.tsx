@@ -112,7 +112,20 @@ export default function ProviderVehiclesPage() {
           {vehicles.map((vehicle) => {
             const cover = vehicle.images?.[0];
             return (
-              <Card key={vehicle.id} hover className="flex items-start gap-4">
+              <Card
+                key={vehicle.id}
+                hover
+                role="button"
+                tabIndex={0}
+                onClick={() => router.push(`/provider/vehicles/${vehicle.id}/edit`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    router.push(`/provider/vehicles/${vehicle.id}/edit`);
+                  }
+                }}
+                className="flex cursor-pointer items-start gap-4"
+              >
                 {/* Cover image */}
                 <div className="h-20 w-28 flex-shrink-0 overflow-hidden rounded-media bg-surface-hover">
                   {cover ? (
@@ -158,17 +171,19 @@ export default function ProviderVehiclesPage() {
                 {/* Actions */}
                 <div className="flex flex-shrink-0 items-center gap-3">
                   {(vehicle.status === 'DRAFT' || vehicle.status === 'REJECTED') && (
-                    <Link href={`/provider/vehicles/${vehicle.id}/edit`} className="text-xs font-semibold text-brand-600 hover:underline">
-                      Edit
-                    </Link>
+                    <span className="text-xs font-semibold text-brand-600">Edit</span>
                   )}
                   {vehicle.status === 'APPROVED' && (
-                    <Link href={`/provider/vehicles/${vehicle.id}/edit`} className="text-xs font-medium text-text-muted hover:underline">
-                      View
-                    </Link>
+                    <span className="text-xs font-medium text-text-muted">View</span>
                   )}
                   {vehicle.status !== 'ARCHIVED' && (
-                    <button onClick={() => setConfirmArchiveId(vehicle.id)} className="text-xs text-text-faint transition-colors hover:text-red-600">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmArchiveId(vehicle.id);
+                      }}
+                      className="text-xs text-text-faint transition-colors hover:text-red-600"
+                    >
                       Archive
                     </button>
                   )}

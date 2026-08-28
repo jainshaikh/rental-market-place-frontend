@@ -67,9 +67,11 @@ export async function fetchVehicleBySlug(slug: string) {
   return serverFetch<ServerVehicleDetailResponse>(`/listings/${slug}`, { revalidate: false });
 }
 
-export async function fetchFeaturedListings(limit = 8) {
+export async function fetchFeaturedListings(limit = 8, city?: string) {
+  const qs = new URLSearchParams({ limit: String(limit) });
+  if (city) qs.set('city', city);
   return serverFetch<{ success: boolean; data: import('../api/listings.api').ListingVehicleCard[] }>(
-    `/listings/featured?limit=${limit}`,
+    `/listings/featured?${qs}`,
     { revalidate: 300, tags: ['featured-listings'] },
   );
 }
@@ -98,8 +100,10 @@ export interface ServerProviderDetailResponse {
   data: import('./providers.api').PublicProviderDetail;
 }
 
-export async function fetchAllProviders(page = 1, limit = 12) {
-  return serverFetch<ServerProvidersResponse>(`/providers?page=${page}&limit=${limit}`, {
+export async function fetchAllProviders(page = 1, limit = 12, city?: string) {
+  const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (city) qs.set('city', city);
+  return serverFetch<ServerProvidersResponse>(`/providers?${qs}`, {
     revalidate: 120,
     tags: ['providers'],
   });
@@ -147,6 +151,16 @@ export async function fetchTripById(id: string) {
 export async function fetchTripMetaCities() {
   return serverFetch<{ success: boolean; data: import('../api/trips.api').TripMetaCities }>(
     '/trips/meta/cities',
+    { revalidate: 300 },
+  );
+}
+
+export async function fetchRatingSummary(
+  subjectType: import('../api/reviews.api').ReviewSubjectType,
+  subjectId: string,
+) {
+  return serverFetch<{ success: boolean; data: import('../api/reviews.api').RatingSummary }>(
+    `/reviews/summary?subjectType=${subjectType}&subjectId=${subjectId}`,
     { revalidate: 300 },
   );
 }

@@ -6,23 +6,23 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { CheckCircle2, ChevronRight, Minus, Plus } from 'lucide-react';
-import { useAuth } from '../../../../../hooks/useAuth';
-import { useCreateTripInquiry } from '../../../../../hooks/useTripInquiries';
+import { useAuth } from '../../../../../../hooks/useAuth';
+import { useCreateTripInquiry } from '../../../../../../hooks/useTripInquiries';
 import { useQuery } from '@tanstack/react-query';
-import { tripsApi } from '../../../../../lib/api/trips.api';
-import { getCurrencyCode } from '../../../../../lib/utils/currency';
+import { tripsApi } from '../../../../../../lib/api/trips.api';
+import { getCurrencyCode } from '../../../../../../lib/utils/currency';
 import {
   createTripInquirySchema,
   type CreateTripInquiryFormValues,
-} from '../../../../../lib/validations/trip-inquiry.schema';
-import { Button, Card, Input, Textarea } from '../../../../../components/ui';
+} from '../../../../../../lib/validations/trip-inquiry.schema';
+import { Button, Card, Input, Textarea } from '../../../../../../components/ui';
 
 function titleCase(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 export default function TripInquirePage() {
-  const params = useParams<{ id: string }>();
+  const params = useParams<{ route: string; id: string }>();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const createInquiry = useCreateTripInquiry();
@@ -47,7 +47,7 @@ export default function TripInquirePage() {
   const requestedSeats = watch('requestedSeats') ?? 1;
 
   if (!authLoading && !user) {
-    router.replace(`/login?redirect=/trips/${params.id}/inquire`);
+    router.replace(`/login?redirect=/carpool/${params.route}/${params.id}/inquire`);
     return null;
   }
 
@@ -63,7 +63,7 @@ export default function TripInquirePage() {
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
         <p className="text-slate-600">Trip not found.</p>
-        <Link href="/trips" className="mt-4 inline-block text-sm text-brand-600 hover:underline">
+        <Link href="/carpool" className="mt-4 inline-block text-sm text-brand-600 hover:underline">
           Browse all trips
         </Link>
       </div>
@@ -71,6 +71,7 @@ export default function TripInquirePage() {
   }
 
   const maxSeats = Math.max(1, trip.availableSeats);
+  const routeSlug = `${trip.originCity.toLowerCase()}-to-${trip.destinationCity.toLowerCase()}`;
 
   const onSubmit = async (values: CreateTripInquiryFormValues) => {
     const result = await createInquiry.mutateAsync({
@@ -97,7 +98,7 @@ export default function TripInquirePage() {
           <Link href="/dashboard/trip-inquiries">
             <Button variant="primary">View my requests</Button>
           </Link>
-          <Link href="/trips">
+          <Link href="/carpool">
             <Button variant="secondary">Browse more trips</Button>
           </Link>
         </div>
@@ -109,7 +110,7 @@ export default function TripInquirePage() {
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
         <p className="text-slate-600">This trip is full — no seats remaining.</p>
-        <Link href={`/trips/${params.id}`} className="mt-4 inline-block text-sm text-brand-600 hover:underline">
+        <Link href={`/carpool/${routeSlug}/${params.id}`} className="mt-4 inline-block text-sm text-brand-600 hover:underline">
           Back to trip
         </Link>
       </div>
@@ -119,11 +120,11 @@ export default function TripInquirePage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
       <nav className="mb-5 flex items-center gap-2 text-xs text-text-muted">
-        <Link href="/trips" className="hover:text-slate-700">
-          Trips
+        <Link href="/carpool" className="hover:text-slate-700">
+          Carpool
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-border-strong" />
-        <Link href={`/trips/${params.id}`} className="hover:text-slate-700">
+        <Link href={`/carpool/${routeSlug}/${params.id}`} className="hover:text-slate-700">
           {titleCase(trip.originCity)} → {titleCase(trip.destinationCity)}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-border-strong" />

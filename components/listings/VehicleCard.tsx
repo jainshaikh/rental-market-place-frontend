@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Image as ImageIcon, MapPin, Users } from 'lucide-react';
 import { cn } from '../../lib/utils/cn';
 import type { ListingVehicleCard } from '../../lib/api/listings.api';
 import { getCurrencyCode } from '../../lib/utils/currency';
+import { getVehicleUrl } from '../../lib/utils/vehicleUrl';
 import { Avatar } from '../ui';
 
 interface VehicleCardProps {
@@ -20,7 +22,7 @@ export function VehicleCard({ vehicle, className }: VehicleCardProps) {
 
   return (
     <Link
-      href={`/vehicles/${vehicle.slug}`}
+      href={getVehicleUrl(vehicle, location)}
       className={cn(
         // text-ink on the root: the card is an <a>, so without it every child
         // inherits the link colour and the title hover below becomes a no-op.
@@ -33,11 +35,12 @@ export function VehicleCard({ vehicle, className }: VehicleCardProps) {
       {/* Image */}
       <div className="relative aspect-[16/10] overflow-hidden bg-surface-hover">
         {cover ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={cover.url}
             alt={cover.altText ?? vehicle.title}
-            className="ease-smooth h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.07]"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="ease-smooth object-cover transition-transform duration-500 group-hover:scale-[1.07]"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-text-faint">

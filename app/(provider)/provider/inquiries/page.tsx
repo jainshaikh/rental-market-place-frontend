@@ -8,6 +8,7 @@ import type { BookingRequest, BookingStatus } from '../../../../lib/api/bookings
 import { cn } from '../../../../lib/utils/cn';
 import { getCurrencyCode } from '../../../../lib/utils/currency';
 import { formatDurationLabel } from '../../../../lib/utils/rentalDuration';
+import { getVehicleUrl } from '../../../../lib/utils/vehicleUrl';
 import { Button, Card, EmptyState, Pagination, SegmentedTabs, Textarea, WhatsAppButton } from '../../../../components/ui';
 import { StatusBadge } from '../../../../components/common/StatusBadge';
 import * as Dialog from '@radix-ui/react-dialog';
@@ -186,7 +187,7 @@ function InquiryCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <Link href={`/vehicles/${inquiry.vehicle.slug}`} className="text-sm font-semibold text-ink hover:text-brand-600">
+              <Link href={getVehicleUrl(inquiry.vehicle)} className="text-sm font-semibold text-ink hover:text-brand-600">
                 {inquiry.vehicle.title}
               </Link>
               <p className="mt-0.5 text-xs text-text-muted">

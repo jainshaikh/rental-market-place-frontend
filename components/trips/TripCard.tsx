@@ -21,9 +21,18 @@ function seatsPillClass(seats: number): string {
 interface TripCardProps {
   trip: TripCardType;
   className?: string;
+  /**
+   * Defaults to the permanent route page (/carpool/{origin}-to-{destination})
+   * rather than this specific trip's own detail page — several trips can
+   * share a route, and the route page is the durable, indexable landing
+   * spot. The route page itself overrides this to link to the individual
+   * trip's own nested detail page (/carpool/{route}/{id}) instead, since
+   * there it needs to disambiguate between multiple trips on the same route.
+   */
+  href?: string;
 }
 
-export function TripCard({ trip, className }: TripCardProps) {
+export function TripCard({ trip, className, href }: TripCardProps) {
   const price = Number(trip.pricePerSeat).toLocaleString();
   const currency = getCurrencyCode(trip.userVehicle?.country);
   const departure = new Date(trip.departureAt);
@@ -31,10 +40,12 @@ export function TripCard({ trip, className }: TripCardProps) {
   const whatsappMessage = `Hi, I'm interested in your trip from ${titleCase(trip.originCity)} to ${titleCase(
     trip.destinationCity,
   )} on ${departure.toLocaleString('en-PK', { dateStyle: 'medium', timeStyle: 'short' })}. Is a seat still available?`;
+  const targetHref =
+    href ?? `/carpool/${trip.originCity.toLowerCase()}-to-${trip.destinationCity.toLowerCase()}`;
 
   return (
     <Link
-      href={`/trips/${trip.id}`}
+      href={targetHref}
       className={cn(
         // text-ink on the root: the card is an <a>, so without it children
         // inherit the link colour and the destination hover becomes a no-op.
