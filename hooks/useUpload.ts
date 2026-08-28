@@ -26,7 +26,7 @@ export function useUpload(context: UploadContext) {
       file: File,
       documentType?: string,
       entityId?: string,
-    ): Promise<{ url: string; publicId: string } | null> => {
+    ): Promise<{ url: string; publicId: string; id?: string } | null> => {
       setState({ uploading: true, progress: 0, url: null, publicId: null, error: null });
 
       try {
@@ -42,7 +42,7 @@ export function useUpload(context: UploadContext) {
           error: null,
         });
 
-        return { url: result.url, publicId: result.publicId };
+        return { url: result.url, publicId: result.publicId, id: result.id };
       } catch (err: unknown) {
         const message =
           (err as { response?: { data?: { error?: { message?: string } } } })

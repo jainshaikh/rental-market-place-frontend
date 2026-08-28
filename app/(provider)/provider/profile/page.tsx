@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import {
@@ -13,6 +14,7 @@ import {
   useCreateShowroom,
   useUpdateShowroom,
   useDeleteShowroom,
+  providerQueryKeys,
 } from '../../../../hooks/useProviderProfile';
 import { providersApi } from '../../../../lib/api/providers.api';
 import {
@@ -28,18 +30,20 @@ import { DocumentUpload } from '../../../../components/uploads/DocumentUpload';
 import { StatusBadge } from '../../../../components/common/StatusBadge';
 import { PersonalInformationSection } from '../../../../components/account/PersonalInformationSection';
 
-type TabKey = 'profile' | 'showroom' | 'documents' | 'submit' | 'account';
+type TabKey = 'profile' | 'logo' | 'showroom' | 'documents' | 'submit' | 'account';
 
 const TABS: { key: TabKey; label: string; step: number }[] = [
   { key: 'profile', label: '1. Business Info', step: 1 },
-  { key: 'showroom', label: '2. Showroom', step: 2 },
-  { key: 'documents', label: '3. Documents', step: 3 },
-  { key: 'submit', label: '4. Submit', step: 4 },
+  { key: 'logo', label: '2. Upload Logo', step: 2 },
+  { key: 'showroom', label: '3. Showroom', step: 3 },
+  { key: 'documents', label: '4. Documents', step: 4 },
+  { key: 'submit', label: '5. Submit', step: 5 },
   { key: 'account', label: 'Personal Information', step: 0 },
 ];
 
 export default function ProviderProfilePage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabKey>('profile');
   const [isCreating, setIsCreating] = useState(false);
 
@@ -81,7 +85,7 @@ export default function ProviderProfilePage() {
       await providersApi.create(data);
       toast.success('Business profile created!');
       router.refresh();
-      setActiveTab('showroom');
+      setActiveTab('logo');
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error
@@ -94,7 +98,7 @@ export default function ProviderProfilePage() {
 
   const handleUpdateProfile = async (data: UpdateProviderFormValues) => {
     await updateProvider.mutateAsync(data);
-    setActiveTab('showroom');
+    setActiveTab('logo');
   };
 
   const handleLogoUpload = async (url: string) => {
@@ -116,7 +120,8 @@ export default function ProviderProfilePage() {
   };
 
   const handleDocumentUploaded = () => {
-    // Profile query auto-refreshes via mutation invalidation
+    queryClient.invalidateQueries({ queryKey: providerQueryKeys.myProfile });
+    toast.success('Document uploaded');
   };
 
   const handleSubmitForReview = async () => {
@@ -281,17 +286,6 @@ export default function ProviderProfilePage() {
                 />
               </div>
 
-              {/* Logo */}
-              <div className="grid grid-cols-2 gap-4">
-                <ImageUpload
-                  context="provider_logo"
-                  currentUrl={profile.logoUrl}
-                  onUploaded={(url) => handleLogoUpload(url)}
-                  label="Logo"
-                  aspectRatio="square"
-                />
-              </div>
-
               <button
                 type="submit"
                 disabled={updateProvider.isPending}
@@ -301,6 +295,35 @@ export default function ProviderProfilePage() {
               </button>
             </form>
           )}
+        </div>
+      )}
+
+      {/* ── Tab: Logo ────────────────────────────────────────────────────── */}
+      {activeTab === 'logo' && profile && (
+        <div className="rounded-xl border border-slate-200 bg-white p-6">
+          <h2 className="mb-1 font-semibold text-slate-900">Upload your logo</h2>
+          <p className="mb-5 text-sm text-slate-500">
+            Add a logo so customers recognize your business. You can always change it later from
+            this tab.
+          </p>
+
+          <div className="max-w-xs">
+            <ImageUpload
+              context="provider_logo"
+              currentUrl={profile.logoUrl}
+              onUploaded={(url) => handleLogoUpload(url)}
+              label="Logo"
+              aspectRatio="square"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('showroom')}
+            className="mt-5 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+          >
+            Continue to showroom →
+          </button>
         </div>
       )}
 

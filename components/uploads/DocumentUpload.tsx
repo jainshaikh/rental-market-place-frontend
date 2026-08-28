@@ -23,7 +23,7 @@ export function DocumentUpload({ existingDocuments, onUploaded, className }: Doc
 
     const result = await upload(file, selectedType);
     if (result) {
-      onUploaded({ id: '', url: result.url, documentType: selectedType });
+      onUploaded({ id: result.id ?? '', url: result.url, documentType: selectedType });
     }
 
     if (inputRef.current) inputRef.current.value = '';
