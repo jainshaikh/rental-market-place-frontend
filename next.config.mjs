@@ -5,17 +5,7 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.cloudinary.com',
-        pathname: '/**',
-      },
-      {
-        // AWS S3 (STORAGE_PROVIDER=s3) — matches https://<bucket>.s3.<region>.amazonaws.com/...
+        // AWS S3 — matches https://<bucket>.s3.<region>.amazonaws.com/...
         protocol: 'https',
         hostname: '*.s3.*.amazonaws.com',
         pathname: '/**',
