@@ -24,6 +24,7 @@ export interface ListingVehicleCard {
   seatingCapacity: number;
   locationText: string | null;
   status: string;
+  updatedAt: string;
   images: ListingImage[];
   providerProfile: { businessName: string; slug: string };
   showroom: { city: string; area: string | null; country: Market } | null;

@@ -14,16 +14,60 @@ async function fetchJson<T>(path: string, revalidate: number): Promise<T | null>
   }
 }
 
-async function fetchVehicleUrls(): Promise<string[]> {
-  const data = await fetchJson<{
-    data: { slug: string; make: string; model: string; showroom: { city: string } | null }[];
-  }>('/listings?limit=500&sort=newest', 3600);
-  return (data?.data ?? []).map((v) => getVehicleUrl(v, v.showroom?.city));
+// The public /listings endpoint caps `limit` at 100 (a deliberate anti-abuse
+// limit shared by every paginated endpoint — not something to raise just for
+// the sitemap's convenience), so a single limit=500 request silently 400s.
+// That was true of the *previous* version of this function too: it requested
+// limit=500, the backend rejected it, fetchJson's catch swallowed the error,
+// and every individual vehicle page silently vanished from the sitemap.
+// Paginate properly instead, capped at 20 pages (2,000 vehicles) as a sanity
+// backstop against something going wrong, not a real expected ceiling.
+async function fetchVehicleUrls(): Promise<{ path: string; updatedAt: string }[]> {
+  type Vehicle = {
+    slug: string;
+    make: string;
+    model: string;
+    showroom: { city: string } | null;
+    updatedAt: string;
+  };
+  const PAGE_SIZE = 100;
+  const MAX_PAGES = 20;
+  const results: { path: string; updatedAt: string }[] = [];
+
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const data = await fetchJson<{ data: Vehicle[]; meta: { hasNextPage: boolean } }>(
+      `/listings?limit=${PAGE_SIZE}&page=${page}&sort=newest`,
+      3600,
+    );
+    if (!data?.data?.length) break;
+    for (const v of data.data) {
+      results.push({ path: getVehicleUrl(v, v.showroom?.city), updatedAt: v.updatedAt });
+    }
+    if (!data.meta?.hasNextPage) break;
+  }
+
+  return results;
 }
 
-async function fetchProviderSlugs(): Promise<string[]> {
-  const data = await fetchJson<{ data: { slug: string }[] }>('/providers?limit=500', 3600);
-  return (data?.data ?? []).map((p) => p.slug);
+// /providers has no enforced max `limit` today (unlike /listings), but
+// paginating properly here too means this doesn't silently break the same
+// way if that ever changes — same reasoning as fetchVehicleUrls above.
+async function fetchProviders(): Promise<{ slug: string; updatedAt: string }[]> {
+  const PAGE_SIZE = 100;
+  const MAX_PAGES = 20;
+  const results: { slug: string; updatedAt: string }[] = [];
+
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const data = await fetchJson<{
+      data: { slug: string; updatedAt: string }[];
+      meta: { hasNextPage: boolean };
+    }>(`/providers?limit=${PAGE_SIZE}&page=${page}`, 3600);
+    if (!data?.data?.length) break;
+    results.push(...data.data);
+    if (!data.meta?.hasNextPage) break;
+  }
+
+  return results;
 }
 
 async function fetchCities(): Promise<string[]> {
@@ -82,10 +126,11 @@ async function fetchProviderCities(cities: string[]): Promise<string[]> {
 // Same gating logic as /carpool/[route] itself (that page's generateMetadata
 // sets noindex when a route currently has zero trips) — only include routes
 // (and origin-only city hubs) with at least one live trip in this sample of
-// the newest 200.
+// the newest 100 (the API's enforced max `limit` — a higher value 400s, which
+// is exactly the bug this whole function's sibling, fetchVehicleUrls, had).
 async function fetchCarpoolEntries(): Promise<{ routes: { origin: string; destination: string }[]; cities: string[] }> {
   const data = await fetchJson<{ data: { originCity: string; destinationCity: string }[] }>(
-    '/trips?limit=200&sort=newest',
+    '/trips?limit=100&sort=newest',
     300,
   );
   const routeSeen = new Map<string, { origin: string; destination: string }>();
@@ -100,9 +145,9 @@ async function fetchCarpoolEntries(): Promise<{ routes: { origin: string; destin
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [vehicleUrls, providerSlugs, cities] = await Promise.all([
+  const [vehicleUrls, providers, cities] = await Promise.all([
     fetchVehicleUrls(),
-    fetchProviderSlugs(),
+    fetchProviders(),
     fetchCities(),
   ]);
 
@@ -124,6 +169,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'hourly',
       priority: 0.9,
+    },
+    {
+      url: `${BASE_URL}/rent-a-car/price-index`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.6,
     },
     {
       url: `${BASE_URL}/providers`,
@@ -150,16 +201,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  const vehicleRoutes: MetadataRoute.Sitemap = vehicleUrls.map((path) => ({
+  // Real per-item timestamps (from the backend's `updatedAt`) rather than
+  // "now" on every build — a vehicle nobody's touched in weeks shouldn't
+  // claim to have changed today just because the sitemap regenerated.
+  const vehicleRoutes: MetadataRoute.Sitemap = vehicleUrls.map(({ path, updatedAt }) => ({
     url: `${BASE_URL}${path}`,
-    lastModified: new Date(),
+    lastModified: new Date(updatedAt),
     changeFrequency: 'weekly' as const,
     priority: 0.7,
   }));
 
-  const providerRoutes: MetadataRoute.Sitemap = providerSlugs.map((slug) => ({
+  const providerRoutes: MetadataRoute.Sitemap = providers.map(({ slug, updatedAt }) => ({
     url: `${BASE_URL}/providers/${slug}`,
-    lastModified: new Date(),
+    lastModified: new Date(updatedAt),
     changeFrequency: 'weekly' as const,
     priority: 0.6,
   }));

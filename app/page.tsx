@@ -279,6 +279,9 @@ export default async function HomePage() {
             <Link href="/carpool" className="transition-colors hover:text-brand-700">
               Carpool
             </Link>
+            <Link href="/rent-a-car/price-index" className="transition-colors hover:text-brand-700">
+              Price Index
+            </Link>
             <Link href="/login" className="transition-colors hover:text-brand-700">
               Sign in
             </Link>

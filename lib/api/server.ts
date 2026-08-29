@@ -84,6 +84,27 @@ export async function fetchDistinctCities() {
   return serverFetch<{ success: boolean; data: string[] }>('/listings/meta/cities', { revalidate: 3600 });
 }
 
+export interface PriceIndexBucket {
+  count: number;
+  minPrice: number;
+  maxPrice: number;
+  avgPrice: number;
+  medianPrice: number;
+}
+
+export interface PriceIndexData {
+  generatedAt: string;
+  overall: PriceIndexBucket | null;
+  byCity: (PriceIndexBucket & { city: string })[];
+  byMake: (PriceIndexBucket & { make: string })[];
+}
+
+export async function fetchPriceIndex() {
+  return serverFetch<{ success: boolean; data: PriceIndexData }>('/listings/meta/price-index', {
+    revalidate: 3600,
+  });
+}
+
 export interface ServerProvidersResponse {
   success: boolean;
   data: import('./providers.api').PublicProviderCard[];

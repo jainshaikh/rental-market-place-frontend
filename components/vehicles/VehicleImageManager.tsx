@@ -25,7 +25,11 @@ export function VehicleImageManager({ vehicleId, images, className }: VehicleIma
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const result = await upload(file);
+    // Passing vehicleId lets the backend build a descriptive filename
+    // (make-model-year) and apply the KerayeGo watermark — both need to know
+    // which vehicle this photo belongs to at upload time, not just when it's
+    // attached afterward.
+    const result = await upload(file, undefined, vehicleId);
     if (result) {
       await addImage.mutateAsync({
         url: result.url,

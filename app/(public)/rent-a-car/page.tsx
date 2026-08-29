@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { cookies } from 'next/headers';
+import Link from 'next/link';
 import { fetchListings, fetchDistinctMakes, fetchDistinctCities } from '../../../lib/api/server';
 import { VehiclesView } from '../../../components/listings/VehiclesView';
 import type { ListingsResponse } from '../../../lib/api/listings.api';
@@ -43,13 +44,21 @@ export default async function RentACarPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Page header */}
-      <div className="mb-7">
-        <h1 className="text-[26px] font-bold tracking-tight text-ink">Rent a Car</h1>
-        <p className="mt-1.5 text-sm text-text-muted">
-          {initialData?.meta.total
-            ? `${initialData.meta.total.toLocaleString()} vehicles available from verified providers`
-            : 'Find the perfect vehicle for your needs'}
-        </p>
+      <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-[26px] font-bold tracking-tight text-ink">Rent a Car</h1>
+          <p className="mt-1.5 text-sm text-text-muted">
+            {initialData?.meta.total
+              ? `${initialData.meta.total.toLocaleString()} vehicles available from verified providers`
+              : 'Find the perfect vehicle for your needs'}
+          </p>
+        </div>
+        <Link
+          href="/rent-a-car/price-index"
+          className="text-sm font-semibold text-brand-700 hover:underline"
+        >
+          See real rental price data →
+        </Link>
       </div>
 
       {/* Listings with filters — Suspense boundary for streaming */}

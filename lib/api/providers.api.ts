@@ -58,6 +58,7 @@ export interface PublicProviderCard {
   logoUrl: string | null;
   businessDescription: string | null;
   isFeatured: boolean;
+  updatedAt: string;
   showrooms: { city: string; area: string | null }[];
   _count: { vehicles: number };
 }
