@@ -1,4 +1,5 @@
 import { cn } from '../../lib/utils/cn';
+import { trackEvent } from '../../lib/utils/analytics';
 
 function WhatsAppGlyph({ className }: { className?: string }) {
   // Lucide has no WhatsApp brand glyph — this is the one shared copy of the
@@ -23,6 +24,7 @@ interface WhatsAppButtonProps {
 export function WhatsAppButton({ phone, message, variant = 'filled', label, className }: WhatsAppButtonProps) {
   const digits = phone.replace(/[^\d+]/g, '');
   const href = `https://wa.me/${digits}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
+  const handleClick = () => trackEvent('contact_provider', { method: 'whatsapp' });
 
   if (variant === 'text') {
     return (
@@ -30,6 +32,7 @@ export function WhatsAppButton({ phone, message, variant = 'filled', label, clas
         href={href}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={handleClick}
         className={cn(
           'flex flex-shrink-0 items-center gap-1.5 text-xs font-semibold text-whatsapp hover:underline',
           className,
@@ -46,6 +49,7 @@ export function WhatsAppButton({ phone, message, variant = 'filled', label, clas
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={handleClick}
       className={cn(
         'flex w-full items-center justify-center gap-2 rounded-control bg-whatsapp py-3.5 text-sm font-semibold text-white transition-colors hover:bg-whatsapp-hover',
         className,

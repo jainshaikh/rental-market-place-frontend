@@ -11,6 +11,7 @@ import { Building2, Car } from 'lucide-react';
 import { registerSchema, type RegisterFormValues } from '../../../lib/validations/auth.schema';
 import { useAuth } from '../../../hooks/useAuth';
 import { Role } from '../../../types/enums';
+import { trackEvent } from '../../../lib/utils/analytics';
 import { Button, Input, RadioCard } from '../../../components/ui';
 import { Logo } from '../../../components/common/Logo';
 
@@ -40,6 +41,8 @@ function RegisterPageContent() {
     try {
       const { confirmPassword: _skip, ...payload } = data;
       await registerUser(payload);
+      trackEvent('sign_up', { role: payload.role });
+      if (payload.role === Role.PROVIDER) trackEvent('provider_signup');
       toast.success('Account created! Please check your email to verify your account.');
       // Carries the caller's intent (e.g. "send inquiry on this vehicle")
       // through registration -> login, instead of dropping it here.

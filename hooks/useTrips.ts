@@ -7,6 +7,7 @@ import {
   type CreateTripPayload,
   type UpdateTripPayload,
 } from '../lib/api/trips.api';
+import { trackEvent } from '../lib/utils/analytics';
 
 function errorMessage(error: unknown, fallback: string): string {
   return (
@@ -36,8 +37,9 @@ export function useCreateTrip() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateTripPayload) => tripsApi.create(data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['trips', 'my'] });
+      trackEvent('offer_ride', { origin_city: variables.originCity, destination_city: variables.destinationCity });
       toast.success('Trip posted — now visible to riders');
     },
     onError: (error: unknown) => toast.error(errorMessage(error, 'Failed to post trip')),

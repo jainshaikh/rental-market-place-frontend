@@ -5,6 +5,7 @@ import { ArrowRight, ChevronRight } from 'lucide-react';
 import { fetchTrips } from '../../../../lib/api/server';
 import { TripCard } from '../../../../components/trips/TripCard';
 import type { TripCard as TripCardType } from '../../../../lib/api/trips.api';
+import { TrackEvent } from '../../../../components/common/TrackEvent';
 
 interface PageProps {
   params: { route: string };
@@ -131,6 +132,7 @@ export default async function CarpoolRoutePage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
+      {destination && <TrackEvent name="view_carpool_route" params={{ origin, destination }} />}
 
       {/* Breadcrumb */}
       <nav className="mb-5 flex items-center gap-2 text-xs text-text-muted">

@@ -6,6 +6,7 @@ import {
   type CreateTripInquiryPayload,
   type UpdateTripInquiryStatusPayload,
 } from '../lib/api/trip-inquiries.api';
+import { trackEvent } from '../lib/utils/analytics';
 
 // ── Rider hooks ─────────────────────────────────────────────────────────────
 
@@ -36,10 +37,11 @@ export function useCreateTripInquiry() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateTripInquiryPayload) => tripInquiriesApi.create(data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['trip-inquiries'] });
       qc.invalidateQueries({ queryKey: ['trips'] });
       qc.invalidateQueries({ queryKey: ['trip'] });
+      trackEvent('join_ride', { trip_id: variables.tripId, seats: variables.requestedSeats });
     },
     onError: (err: { response?: { data?: { message?: string } } }) => {
       toast.error(err?.response?.data?.message ?? 'Failed to send request');

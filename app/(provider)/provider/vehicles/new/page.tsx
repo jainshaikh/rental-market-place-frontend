@@ -14,6 +14,7 @@ import {
 } from '../../../../../lib/validations/vehicle.schema';
 import { cn } from '../../../../../lib/utils/cn';
 import { getCurrencyCode } from '../../../../../lib/utils/currency';
+import { TrackEvent } from '../../../../../components/common/TrackEvent';
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -111,6 +112,7 @@ export default function NewVehiclePage() {
 
   return (
     <div className="max-w-2xl space-y-6">
+      <TrackEvent name="list_vehicle_start" />
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Add a vehicle</h1>
         <p className="mt-1 text-sm text-slate-500">

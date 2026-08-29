@@ -8,6 +8,7 @@ import {
   type UpdateVehiclePayload,
   type AddVehicleImagePayload,
 } from '../lib/api/vehicles.api';
+import { trackEvent } from '../lib/utils/analytics';
 
 export const vehicleQueryKeys = {
   myVehicles: (params?: object) => ['vehicles', 'my', params] as const,
@@ -33,8 +34,9 @@ export function useCreateVehicle() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateVehiclePayload) => vehiclesApi.create(data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['vehicles', 'my'] });
+      trackEvent('list_vehicle_complete', { make: variables.make, model: variables.model });
       toast.success('Vehicle created as draft');
     },
     onError: () => toast.error('Failed to create vehicle'),

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,6 +18,7 @@ import {
 } from '../../../../../../../lib/validations/booking.schema';
 import { Button, Card, Input, Textarea } from '../../../../../../../components/ui';
 import { cn } from '../../../../../../../lib/utils/cn';
+import { trackEvent } from '../../../../../../../lib/utils/analytics';
 
 export default function InquirePage() {
   const params = useParams<{ city: string; makeModel: string; slug: string }>();
@@ -31,6 +32,13 @@ export default function InquirePage() {
     queryFn: () => listingsApi.getBySlug(params.slug),
   });
   const vehicle = vehicleRes;
+  const trackedBegin = useRef(false);
+
+  useEffect(() => {
+    if (trackedBegin.current || !vehicle?.id) return;
+    trackedBegin.current = true;
+    trackEvent('begin_booking', { vehicle_id: vehicle.id });
+  }, [vehicle?.id]);
 
   const {
     register,

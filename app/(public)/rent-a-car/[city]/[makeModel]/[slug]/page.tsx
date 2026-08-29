@@ -21,6 +21,7 @@ import { Card } from '../../../../../../components/ui';
 import { RatingSummaryBadge } from '../../../../../../components/common/RatingSummaryBadge';
 import { ReviewsList } from '../../../../../../components/common/ReviewsList';
 import { InquiryCta } from '../../../../../../components/vehicles/InquiryCta';
+import { TrackEvent } from '../../../../../../components/common/TrackEvent';
 
 interface PageProps {
   params: { city: string; makeModel: string; slug: string };
@@ -155,6 +156,10 @@ export default async function VehicleDetailPage({ params }: PageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <TrackEvent
+        name="view_vehicle"
+        params={{ vehicle_id: vehicle.id, make: vehicle.make, model: vehicle.model, price: vehicle.pricePerDay }}
       />
 
       {/* Breadcrumb */}

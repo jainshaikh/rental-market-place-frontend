@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { bookingsApi, type BookingStatus, type CreateBookingRequestData, type UpdateBookingStatusData } from '../lib/api/bookings.api';
+import { trackEvent } from '../lib/utils/analytics';
 
 // ── User hooks ──────────────────────────────────────────────────────────────
 
@@ -31,8 +32,9 @@ export function useCreateBooking() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateBookingRequestData) => bookingsApi.create(data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['bookings'] });
+      trackEvent('complete_booking', { vehicle_id: variables.vehicleId });
     },
     onError: (err: { response?: { data?: { message?: string } } }) => {
       toast.error(err?.response?.data?.message ?? 'Failed to send inquiry');
