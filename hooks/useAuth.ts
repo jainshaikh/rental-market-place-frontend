@@ -2,19 +2,13 @@
 
 import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
 import { useAuthStore } from '../store/auth.store';
 import { authApi } from '../lib/api/auth.api';
+import { setAuthCookies, clearAuthCookies } from '../lib/utils/auth-cookies';
 import type { AuthUser } from '../types/api.types';
 import type { LoginFormValues } from '../lib/validations/auth.schema';
 import type { RegisterFormValues } from '../lib/validations/auth.schema';
 import { Role } from '../types/enums';
-
-const COOKIE_OPTIONS = {
-  expires: 7,
-  sameSite: 'strict' as const,
-  secure: typeof window !== 'undefined' && window.location.protocol === 'https:',
-};
 
 function roleToRoute(role: string): string {
   if (role === Role.ADMIN || role === Role.SUPER_ADMIN) return '/admin/dashboard';
@@ -31,8 +25,9 @@ export function useAuth() {
       const response = await authApi.login(data);
       const { accessToken, user: authUser } = response.data;
       setAuth(authUser, accessToken);
-      // userRole cookie is readable by Next.js middleware (same origin) — used for RBAC redirects
-      Cookies.set('userRole', authUser.role, COOKIE_OPTIONS);
+      // userRole/emailVerified cookies are readable by Next.js middleware (same origin) —
+      // used for RBAC redirects and gating unverified users out of the dashboard.
+      setAuthCookies(authUser.role, authUser.emailVerified);
       return authUser;
     },
     [setAuth],
@@ -50,7 +45,7 @@ export function useAuth() {
       await authApi.logout();
     } finally {
       clearAuth();
-      Cookies.remove('userRole');
+      clearAuthCookies();
       router.push('/');
     }
   }, [clearAuth, router]);

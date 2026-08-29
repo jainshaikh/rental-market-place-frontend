@@ -43,10 +43,13 @@ function RegisterPageContent() {
       await registerUser(payload);
       trackEvent('sign_up', { role: payload.role });
       if (payload.role === Role.PROVIDER) trackEvent('provider_signup');
-      toast.success('Account created! Please check your email to verify your account.');
-      // Carries the caller's intent (e.g. "send inquiry on this vehicle")
-      // through registration -> login, instead of dropping it here.
-      router.push(loginHref);
+      // Send them to the verification flow, not straight to login — they can't
+      // reach the dashboard yet anyway, so show them what to do next. Carries
+      // the caller's intent (e.g. "send inquiry on this vehicle") along so it
+      // survives register -> verify -> login -> dashboard.
+      const params = new URLSearchParams({ email: payload.email });
+      if (redirect) params.set('redirect', redirect);
+      router.push(`/verify-email?${params.toString()}`);
     } catch (error: unknown) {
       const message =
         (error as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error

@@ -33,8 +33,15 @@ function LoginPageContent() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      // login() sets userRole cookie and updates the store
+      // login() sets userRole/emailVerified cookies and updates the store
       const authUser = await login(data);
+
+      if (!authUser.emailVerified) {
+        toast.success('Welcome back! Please verify your email to continue.');
+        router.push(callbackUrl ? `/verify-email?redirect=${encodeURIComponent(callbackUrl)}` : '/verify-email');
+        router.refresh();
+        return;
+      }
 
       toast.success('Welcome back!');
       // Pass authUser directly — getDashboardRoute() can't read the store update until re-render

@@ -2,40 +2,90 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
+import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { authApi } from '../../../lib/api/auth.api';
+import { useAuthStore } from '../../../store/auth.store';
+import { setEmailVerifiedCookie } from '../../../lib/utils/auth-cookies';
 import { Button, Card } from '../../../components/ui';
 
-type VerifyState = 'loading' | 'success' | 'error' | 'missing';
+const RESEND_COOLDOWN_SECONDS = 60;
+
+type VerifyState = 'loading' | 'success' | 'error' | 'pending';
+
+function extractMessage(error: unknown, fallback: string): string {
+  return (
+    (error as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error
+      ?.message ?? fallback
+  );
+}
 
 function VerifyEmailContent() {
-  const [state, setState] = useState<VerifyState>('loading');
-  const [errorMessage, setErrorMessage] = useState('');
+  const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
+  const emailParam = searchParams.get('email');
+  const redirect = searchParams.get('redirect');
+  const loginHref = redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login';
+
+  const { user, isAuthenticated, setUser } = useAuthStore();
+  const [state, setState] = useState<VerifyState>(token ? 'loading' : 'pending');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [resending, setResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
-    if (!token) {
-      setState('missing');
-      return;
+    // Covers sessions from before this cookie existed (or any other drift between
+    // the client-known verification state and the edge cookie middleware.ts reads):
+    // if the store already says verified, resync the cookie and send them straight
+    // back to where they were headed instead of stranding them on this page.
+    if (isAuthenticated && user?.emailVerified) {
+      setEmailVerifiedCookie(true);
+      router.replace(redirect || '/dashboard');
     }
+  }, [isAuthenticated, user?.emailVerified, redirect, router]);
+
+  useEffect(() => {
+    if (!token) return;
 
     const verify = async () => {
       try {
         await authApi.verifyEmail(token);
+        // In case this tab already holds an authenticated (unverified) session for
+        // the account being verified — keeps the client and middleware cookie in
+        // sync so the dashboard unlocks without forcing a fresh login.
+        setEmailVerifiedCookie(true);
+        if (user) setUser({ ...user, emailVerified: true });
         setState('success');
       } catch (error: unknown) {
-        const message =
-          (error as { response?: { data?: { error?: { message?: string } } } })?.response?.data
-            ?.error?.message || 'Verification failed. The link may have expired.';
-        setErrorMessage(message);
+        setErrorMessage(extractMessage(error, 'Verification failed. The link may have expired.'));
         setState('error');
       }
     };
 
     verify();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  useEffect(() => {
+    if (cooldown === 0) return;
+    const timer = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
+  const handleResend = async () => {
+    setResending(true);
+    try {
+      const res = await authApi.resendVerification();
+      toast.success(res.data.message);
+      setCooldown(RESEND_COOLDOWN_SECONDS);
+    } catch (error: unknown) {
+      toast.error(extractMessage(error, 'Failed to resend verification email'));
+    } finally {
+      setResending(false);
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-md">
@@ -76,13 +126,31 @@ function VerifyEmailContent() {
           </>
         )}
 
-        {state === 'missing' && (
+        {state === 'pending' && (
           <>
-            <h1 className="mb-2 text-xl font-bold text-ink">Missing verification token</h1>
-            <p className="mb-4 text-sm text-text-muted">
-              Please click the link in your verification email, or request a new one.
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-status-amber-bg">
+              <AlertCircle className="h-6 w-6 text-amber-600" />
+            </div>
+            <h1 className="mb-2 text-xl font-bold text-ink">Verify your email</h1>
+            <p className="mb-6 text-sm text-text-muted">
+              {user?.email || emailParam ? (
+                <>
+                  We&apos;ve sent a verification link to{' '}
+                  <span className="font-medium text-ink">{user?.email || emailParam}</span>. Click
+                  it to activate your account.
+                </>
+              ) : (
+                'Please click the link in your verification email, or request a new one.'
+              )}
             </p>
-            <Link href="/login" className="text-sm font-semibold text-brand-600 hover:underline">
+
+            {isAuthenticated && !user?.emailVerified && (
+              <Button className="mb-4 w-full" onClick={handleResend} loading={resending} disabled={cooldown > 0}>
+                {cooldown > 0 ? `Resend available in ${cooldown}s` : 'Resend verification email'}
+              </Button>
+            )}
+
+            <Link href={loginHref} className="text-sm font-semibold text-brand-600 hover:underline">
               Back to sign in
             </Link>
           </>

@@ -41,9 +41,13 @@ export function middleware(request: NextRequest) {
   // visible here because middleware runs on localhost:3000. We rely on userRole, which
   // is a non-HTTP-only cookie set by the client at login time on this origin.
   const userRoleCookie = request.cookies.get('userRole');
+  const emailVerifiedCookie = request.cookies.get('emailVerified');
 
   const isAuthenticated = !!userRoleCookie;
   const userRole = userRoleCookie?.value || null;
+  // Set alongside userRole at login (see hooks/useAuth.ts) — 'false' until the
+  // user clicks the link in their verification email.
+  const isEmailVerified = emailVerifiedCookie?.value === 'true';
 
   // ── Redirect authenticated users away from auth pages ─────────────────────
   if (isAuthenticated && AUTH_ROUTES.some((route) => pathname.startsWith(route))) {
@@ -57,6 +61,14 @@ export function middleware(request: NextRequest) {
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(loginUrl);
+    }
+
+    // Authenticated but hasn't clicked the verification link yet — hold them on
+    // the verify-email flow instead of letting them into the dashboard.
+    if (!isEmailVerified) {
+      const verifyUrl = new URL('/verify-email', request.url);
+      verifyUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(verifyUrl);
     }
 
     // Role-based access control
