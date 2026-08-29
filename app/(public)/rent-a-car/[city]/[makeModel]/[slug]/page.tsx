@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Eye,
   Fuel,
-  Image as ImageIcon,
   MapPin,
   Settings2,
   Users,
@@ -21,6 +20,7 @@ import { Card } from '../../../../../../components/ui';
 import { RatingSummaryBadge } from '../../../../../../components/common/RatingSummaryBadge';
 import { ReviewsList } from '../../../../../../components/common/ReviewsList';
 import { InquiryCta } from '../../../../../../components/vehicles/InquiryCta';
+import { VehicleImageGallery } from '../../../../../../components/vehicles/VehicleImageGallery';
 import { TrackEvent } from '../../../../../../components/common/TrackEvent';
 
 interface PageProps {
@@ -183,7 +183,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
         {/* Left column — images + details */}
         <div className="space-y-6 lg:col-span-2">
           {/* Image gallery */}
-          <ImageGallery images={vehicle.images} title={vehicle.title} />
+          <VehicleImageGallery images={vehicle.images} title={vehicle.title} />
 
           {/* Title + quick specs */}
           <div>
@@ -405,61 +405,6 @@ function InfoBlock({ title, body }: { title: string; body: string }) {
     <div>
       <p className="mb-0.5 text-sm font-medium text-slate-700">{title}</p>
       <p className="text-sm text-text-muted">{body}</p>
-    </div>
-  );
-}
-
-function ImageGallery({
-  images,
-  title,
-}: {
-  images: ListingVehicleDetail['images'];
-  title: string;
-}) {
-  if (images.length === 0) {
-    return (
-      <div className="flex aspect-[16/10] items-center justify-center rounded-card bg-surface-hover text-text-faint">
-        <ImageIcon className="h-10 w-10" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid gap-2">
-      {/* Primary image */}
-      <div className="aspect-[16/10] overflow-hidden rounded-card bg-surface-hover">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={images[0].url}
-          alt={images[0].altText ?? title}
-          className="h-full w-full object-cover"
-        />
-      </div>
-
-      {/* Thumbnails (up to 4) */}
-      {images.length > 1 && (
-        <div className="grid grid-cols-4 gap-2">
-          {images.slice(1, 5).map((img, idx) => (
-            <div
-              key={img.id}
-              className="relative aspect-square overflow-hidden rounded-media bg-surface-hover"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={img.url}
-                alt={img.altText ?? `${title} photo ${idx + 2}`}
-                className="h-full w-full object-cover"
-              />
-              {/* "More" overlay on last thumbnail if there are more images */}
-              {idx === 3 && images.length > 5 && (
-                <div className="absolute inset-0 flex items-center justify-center bg-ink/55">
-                  <span className="text-sm font-semibold text-white">+{images.length - 5}</span>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
