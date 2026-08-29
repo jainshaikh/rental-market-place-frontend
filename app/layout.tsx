@@ -3,6 +3,7 @@ import { Outfit, IBM_Plex_Mono } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { QueryProvider } from '../lib/providers/query-provider';
 import { AuthBootstrap } from '../lib/providers/auth-bootstrap';
+import { GoogleAnalytics } from '../components/analytics/GoogleAnalytics';
 import './globals.css';
 
 // The CSS variable names are unchanged (--font-inter / --font-mono) so
@@ -111,6 +112,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
+        <GoogleAnalytics />
         <QueryProvider>
           <AuthBootstrap />
           {children}
