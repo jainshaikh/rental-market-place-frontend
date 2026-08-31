@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import { Suspense } from 'react';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
-import { fetchTrips, fetchTripMetaCities } from '../../../lib/api/server';
-import { TripsView } from '../../../components/trips/TripsView';
-import type { TripsResponse, TripMetaCities, TripCard as TripCardType } from '../../../lib/api/trips.api';
+import { fetchTripRouteGroups, fetchTripMetaCities } from '../../../lib/api/server';
+import { RouteGroupCard } from '../../../components/trips/RouteGroupCard';
+import { EmptyState } from '../../../components/ui';
+import { Route as RouteIcon } from 'lucide-react';
+import type { TripRouteGroup, TripMetaCities } from '../../../lib/api/trips.api';
 
 function toDisplayName(value: string): string {
   return value
@@ -30,38 +30,12 @@ export const metadata: Metadata = {
   },
 };
 
-interface PageProps {
-  searchParams: { [key: string]: string | string[] | undefined };
-}
+export default async function CarpoolPage() {
+  const [routesRes, citiesRes] = await Promise.all([fetchTripRouteGroups(), fetchTripMetaCities()]);
 
-export default async function CarpoolPage({ searchParams }: PageProps) {
-  const [tripsRes, citiesRes, sampleRes] = await Promise.all([
-    fetchTrips(searchParams),
-    fetchTripMetaCities(),
-    // Unfiltered sample, independent of the page's own searchParams-driven
-    // fetch above — used only to surface real, currently-live routes/cities
-    // as internal links to their permanent /carpool/[route] pages.
-    fetchTrips({ limit: '30', sort: 'newest' }),
-  ]);
-
-  const initialData: TripsResponse | null = tripsRes
-    ? { data: tripsRes.data, meta: tripsRes.meta as TripsResponse['meta'] }
-    : null;
-
+  const routes: TripRouteGroup[] = routesRes?.data ?? [];
   const cities: TripMetaCities = citiesRes?.data ?? { origins: [], destinations: [] };
-
-  const sample = (sampleRes?.data ?? []) as TripCardType[];
-
-  const popularRoutes = Array.from(
-    new Map(
-      sample.map((t) => [
-        `${t.originCity.toLowerCase()}-to-${t.destinationCity.toLowerCase()}`,
-        { origin: t.originCity.toLowerCase(), destination: t.destinationCity.toLowerCase() },
-      ]),
-    ).values(),
-  ).slice(0, 8);
-
-  const popularCities = Array.from(new Set(sample.map((t) => t.originCity.toLowerCase()))).slice(0, 8);
+  const totalTrips = routes.reduce((sum, r) => sum + r.tripCount, 0);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-9 sm:px-6 lg:px-8">
@@ -71,8 +45,8 @@ export default async function CarpoolPage({ searchParams }: PageProps) {
         </p>
         <h1 className="text-[30px] font-bold tracking-[-0.04em] text-ink">Carpool</h1>
         <p className="mt-2 text-sm text-text-muted">
-          {initialData?.meta.total
-            ? `${initialData.meta.total.toLocaleString()} upcoming trips — find a ride and connect with the driver on WhatsApp`
+          {totalTrips > 0
+            ? `${totalTrips.toLocaleString()} upcoming trips across ${routes.length} route${routes.length !== 1 ? 's' : ''} — find a ride and connect with the driver on WhatsApp`
             : 'Going from one city to another? Find a driver already headed your way.'}
         </p>
         <p className="mt-1 text-sm text-text-muted">
@@ -80,46 +54,31 @@ export default async function CarpoolPage({ searchParams }: PageProps) {
         </p>
       </div>
 
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
-          </div>
-        }
-      >
-        <TripsView initialData={initialData} cities={cities} />
-      </Suspense>
+      {routes.length > 0 ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {routes.map((route) => (
+            <RouteGroupCard key={`${route.originCity}-to-${route.destinationCity}`} route={route} />
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          icon={RouteIcon}
+          title="No trips posted yet"
+          description="Check back soon, or be the first to post a trip."
+        />
+      )}
 
-      {popularCities.length > 0 && (
+      {cities.origins.length > 0 && (
         <div className="mt-14 border-t border-border-subtle pt-8">
           <h2 className="text-sm font-semibold text-ink">Browse by city</h2>
           <div className="mt-3 flex flex-wrap gap-2.5">
-            {popularCities.map((city) => (
+            {cities.origins.map((city) => (
               <Link
                 key={city}
                 href={`/carpool/${city}`}
                 className="inline-flex h-9 items-center rounded-control border border-border-subtle bg-page px-3.5 text-sm font-medium text-ink transition-colors hover:border-brand-600 hover:text-brand-700"
               >
                 {toDisplayName(city)}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {popularRoutes.length > 0 && (
-        <div className="mt-10 border-t border-border-subtle pt-8">
-          <h2 className="text-sm font-semibold text-ink">Popular routes</h2>
-          <div className="mt-3 flex flex-wrap gap-2.5">
-            {popularRoutes.map(({ origin, destination }) => (
-              <Link
-                key={`${origin}-to-${destination}`}
-                href={`/carpool/${origin}-to-${destination}`}
-                className="inline-flex h-9 items-center gap-1.5 rounded-control border border-border-subtle bg-page px-3.5 text-sm font-medium text-ink transition-colors hover:border-brand-600 hover:text-brand-700"
-              >
-                {toDisplayName(origin)}
-                <ArrowRight className="h-3 w-3" />
-                {toDisplayName(destination)}
               </Link>
             ))}
           </div>

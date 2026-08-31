@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { cookies } from 'next/headers';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { fetchListings, fetchDistinctMakes, fetchDistinctCities } from '../../../lib/api/server';
 import { VehiclesView } from '../../../components/listings/VehiclesView';
 import type { ListingsResponse } from '../../../lib/api/listings.api';
+import { USER_LOCATION_COOKIE, DEFAULT_NEARBY_RADIUS_KM, parseUserLocation } from '../../../lib/utils/userLocation';
 
 export const metadata: Metadata = {
   title: 'Rent a Car — Browse Vehicles Near You',
@@ -21,11 +22,15 @@ interface PageProps {
 }
 
 export default async function RentACarPage({ searchParams }: PageProps) {
-  // Same geolocation cookie HeroSearch sets — only used as an initial
-  // default (both for this SSR fetch and, client-side, as VehiclesView's
-  // `defaultCity` prop) when the visitor hasn't already picked a city here.
-  const preferredCity = cookies().get('preferredCity')?.value;
-  const effectiveSearchParams = searchParams.city ? searchParams : { ...searchParams, city: preferredCity };
+  const location = parseUserLocation(cookies().get(USER_LOCATION_COOKIE)?.value);
+  const effectiveSearchParams = location
+    ? {
+        ...searchParams,
+        lat: String(location.lat),
+        lng: String(location.lng),
+        radiusKm: String(DEFAULT_NEARBY_RADIUS_KM),
+      }
+    : searchParams;
 
   // Parallel server-side data fetch
   const [listingsRes, makesRes, citiesRes] = await Promise.all([
@@ -73,7 +78,7 @@ export default async function RentACarPage({ searchParams }: PageProps) {
           initialData={initialData}
           makes={makes}
           cities={cities}
-          defaultCity={preferredCity}
+          initialLocation={location}
         />
       </Suspense>
     </div>

@@ -16,6 +16,7 @@ import { HeroStats, type HeroStat } from '../components/home/HeroStats';
 import { HeroCollage } from '../components/home/HeroCollage';
 import { Reveal } from '../components/common/Reveal';
 import { Logo } from '../components/common/Logo';
+import { USER_LOCATION_COOKIE, DEFAULT_NEARBY_RADIUS_KM, parseUserLocation } from '../lib/utils/userLocation';
 
 export const metadata: Metadata = {
   title: 'KerayeGo — Car Rental & Intercity Ride Sharing in Pakistan',
@@ -51,18 +52,17 @@ const TRUST_SIGNALS = [
 ];
 
 export default async function HomePage() {
-  // Set client-side (js-cookie) once "use my location"/geolocation resolves
-  // a city — reading it here lets the server-rendered homepage personalize
-  // around it. HeroSearch calls router.refresh() right after setting it, so
-  // this re-runs with the new value instead of waiting for a hard reload.
-  const preferredCity = cookies().get('preferredCity')?.value;
+  // Set client-side once "Use my location"/Places search resolves a spot —
+  // reading it here lets the server-rendered featured section personalize
+  // around it, same pattern the old `preferredCity` cookie used.
+  const location = parseUserLocation(cookies().get(USER_LOCATION_COOKIE)?.value);
 
   // Both /listings and /providers return meta.total, so the two headline
   // counters are real numbers — limit=1 keeps the payload tiny since we only
   // want the count. There is no stats endpoint; if you add one, swap these two
   // calls for it rather than fetching a page of rows to read its total.
   const [featuredRes, citiesRes, listingsRes, providersRes] = await Promise.all([
-    fetchFeaturedListings(6, preferredCity),
+    fetchFeaturedListings(6, undefined, location?.lat, location?.lng, location ? DEFAULT_NEARBY_RADIUS_KM : undefined),
     fetchDistinctCities(),
     fetchListings({ limit: '1' }),
     fetchAllProviders(1, 1),
@@ -70,10 +70,6 @@ export default async function HomePage() {
 
   const featured: ListingVehicleCard[] = featuredRes?.data ?? [];
   const cities: string[] = citiesRes?.data ?? [];
-  const featuredCityLabel =
-    preferredCity && featured.some((v) => v.showroom?.city?.toLowerCase() === preferredCity.toLowerCase())
-      ? preferredCity.charAt(0).toUpperCase() + preferredCity.slice(1)
-      : null;
 
   const vehicleCount = listingsRes?.meta?.total ?? 0;
   const providerCount = providersRes?.meta?.total ?? 0;
@@ -183,16 +179,16 @@ export default async function HomePage() {
                   Featured
                 </p>
                 <h2 className="text-[28px] font-bold tracking-[-0.038em] text-ink">
-                  {featuredCityLabel ? `Hand-picked vehicles in ${featuredCityLabel}` : 'Hand-picked vehicles'}
+                  {location ? `Hand-picked vehicles near ${location.label}` : 'Hand-picked vehicles'}
                 </h2>
                 <p className="mt-2 text-sm text-text-muted">
-                  {featuredCityLabel
-                    ? `Chosen from our highest-rated providers near you`
+                  {location
+                    ? 'Chosen from our highest-rated providers near you'
                     : 'Chosen from our highest-rated providers'}
                 </p>
               </div>
               <Link
-                href={featuredCityLabel ? `/rent-a-car/${preferredCity}` : '/rent-a-car'}
+                href="/rent-a-car"
                 className="group inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700"
               >
                 View all

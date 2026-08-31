@@ -98,11 +98,20 @@ export function VehicleCard({ vehicle, className }: VehicleCardProps) {
               {vehicle.providerProfile?.businessName ?? 'Unknown provider'}
             </span>
           </Link>
-          {location && (
-            <span className="ml-2 flex flex-shrink-0 items-center gap-1 text-xs text-text-muted">
+          {vehicle.distanceKm !== undefined ? (
+            <span className="ml-2 flex flex-shrink-0 items-center gap-1 text-xs font-medium text-brand-700">
               <MapPin className="h-3 w-3" />
-              {location.charAt(0).toUpperCase() + location.slice(1)}
+              {vehicle.distanceKm < 1
+                ? `${Math.round(vehicle.distanceKm * 1000)} m away`
+                : `${vehicle.distanceKm.toFixed(1)} km away`}
             </span>
+          ) : (
+            location && (
+              <span className="ml-2 flex flex-shrink-0 items-center gap-1 text-xs text-text-muted">
+                <MapPin className="h-3 w-3" />
+                {location.charAt(0).toUpperCase() + location.slice(1)}
+              </span>
+            )
           )}
         </div>
       </div>

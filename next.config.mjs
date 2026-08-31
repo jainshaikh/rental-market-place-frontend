@@ -32,8 +32,8 @@ const nextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           {
-            // geolocation=(self) — the homepage's "use my location" city
-            // detection needs this; it was previously blocked outright.
+            // geolocation=(self) — the "Use my location" nearby-search feature
+            // (HeroSearch, VehiclesView, ProvidersView) needs this.
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(self)',
           },

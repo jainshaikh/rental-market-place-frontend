@@ -27,12 +27,14 @@ export interface ListingVehicleCard {
   updatedAt: string;
   images: ListingImage[];
   providerProfile: { businessName: string; slug: string };
-  showroom: { city: string; area: string | null; country: Market } | null;
+  showroom: { city: string; area: string | null; country: Market; mapLat: number | null; mapLng: number | null } | null;
   // Computed, not stored — is there an ACCEPTED booking covering this exact moment.
   // Browse results exclude BOOKED vehicles by default; a vehicle's own detail
   // page still shows it, marked unavailable, so a direct link never 404s.
   availability: 'AVAILABLE' | 'BOOKED';
   bookedUntil: string | null;
+  /** Only present when the request included lat/lng (nearby search). */
+  distanceKm?: number;
 }
 
 export interface ListingFeature {
@@ -90,6 +92,10 @@ export interface ListingFilters {
   limit?: number;
   /** Include vehicles currently out on a rental — excluded by default. */
   includeBooked?: boolean;
+  /** Nearby search — pairs with lng. Independent of `city`; both can be set. */
+  lat?: number;
+  lng?: number;
+  radiusKm?: number;
 }
 
 export interface ListingsResponse {

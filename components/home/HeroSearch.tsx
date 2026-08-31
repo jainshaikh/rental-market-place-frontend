@@ -1,64 +1,18 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
-import { toast } from 'sonner';
-import { Search, ChevronDown, LocateFixed, Loader2 } from 'lucide-react';
-import { getCurrentCoords, nearestCity } from '../../lib/utils/geolocation';
+import { Search, ChevronDown } from 'lucide-react';
+import { LocationSearch } from '../maps/LocationSearch';
 
 interface HeroSearchProps {
   cities: string[];
 }
 
-const PREFERRED_CITY_COOKIE = 'preferredCity';
-
 export function HeroSearch({ cities }: HeroSearchProps) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [city, setCity] = useState('');
-  const [locating, setLocating] = useState(false);
-
-  const requestLocation = async (silent: boolean) => {
-    setLocating(true);
-    try {
-      const coords = await getCurrentCoords();
-      const detected = nearestCity(coords, cities);
-      if (detected) {
-        setCity(detected);
-        Cookies.set(PREFERRED_CITY_COOKIE, detected, { expires: 365, sameSite: 'lax' });
-        toast.success(`Showing ${detected.charAt(0).toUpperCase()}${detected.slice(1)} first`);
-        // Re-runs the server components on this page (homepage sections that
-        // read the cookie) with the fresh value — no full reload needed.
-        router.refresh();
-      } else if (!silent) {
-        toast.error("We don't have listings near your location yet");
-      }
-    } catch {
-      // Silent on the automatic on-load attempt — a denied/blocked prompt
-      // shouldn't greet a first-time visitor with an error. The manual
-      // button below still surfaces it, since there the user explicitly asked.
-      if (!silent) toast.error('Could not get your location — check your browser permissions');
-    } finally {
-      setLocating(false);
-    }
-  };
-
-  // Pre-fill only — never navigates anyone anywhere on its own, and never
-  // asked twice: a prior choice (this session or an earlier one) is
-  // remembered via cookie, so the browser's own location prompt only fires
-  // once per visitor, the first time they land on the homepage.
-  useEffect(() => {
-    const saved = Cookies.get(PREFERRED_CITY_COOKIE);
-    if (saved) {
-      if (cities.some((c) => c.toLowerCase() === saved.toLowerCase())) setCity(saved.toLowerCase());
-      return;
-    }
-    if (cities.length > 0) void requestLocation(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cities]);
-
-  const handleUseLocation = () => requestLocation(false);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -116,21 +70,7 @@ export function HeroSearch({ cities }: HeroSearchProps) {
         </button>
       </form>
 
-      {cities.length > 0 && (
-        <button
-          type="button"
-          onClick={handleUseLocation}
-          disabled={locating}
-          className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-medium text-white/60 transition-colors hover:text-white disabled:opacity-60"
-        >
-          {locating ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <LocateFixed className="h-3.5 w-3.5" />
-          )}
-          {locating ? 'Finding your city…' : 'Use my location'}
-        </button>
-      )}
+      <LocationSearch className="mt-2.5" />
     </div>
   );
 }

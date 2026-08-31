@@ -24,26 +24,44 @@ const SORT_OPTS = [
 interface TripsViewProps {
   initialData: TripsResponse | null;
   cities: TripMetaCities;
+  /** Fixes this filter and hides its select — used by /carpool/[route], which is already scoped to a city by the URL. */
+  lockedOriginCity?: string;
+  /** Same as lockedOriginCity, for the destination side. Only set for a full two-city route (e.g. /carpool/hyderabad-to-karachi). */
+  lockedDestinationCity?: string;
 }
 
-function parseSearchParams(searchParams: URLSearchParams): TripFilters {
+function parseSearchParams(searchParams: URLSearchParams, lockedOriginCity?: string, lockedDestinationCity?: string): TripFilters {
   return {
-    originCity: searchParams.get('originCity') || undefined,
-    destinationCity: searchParams.get('destinationCity') || undefined,
+    originCity: lockedOriginCity ?? searchParams.get('originCity') ?? undefined,
+    destinationCity: lockedDestinationCity ?? searchParams.get('destinationCity') ?? undefined,
     date: searchParams.get('date') || undefined,
     minSeats: searchParams.get('minSeats') ? Number(searchParams.get('minSeats')) : undefined,
     sort: (searchParams.get('sort') as TripFilters['sort']) || 'departure_asc',
     page: searchParams.get('page') ? Number(searchParams.get('page')) : 1,
+    priceMin: searchParams.get('priceMin') ? Number(searchParams.get('priceMin')) : undefined,
+    priceMax: searchParams.get('priceMax') ? Number(searchParams.get('priceMax')) : undefined,
+    pickupPoint: searchParams.get('pickupPoint') || undefined,
+    dropoffPoint: searchParams.get('dropoffPoint') || undefined,
+    vehicleSearch: searchParams.get('vehicleSearch') || undefined,
   };
 }
 
-export function TripsView({ initialData, cities }: TripsViewProps) {
+export function TripsView({ initialData, cities, lockedOriginCity, lockedDestinationCity }: TripsViewProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
 
-  const filters = parseSearchParams(searchParams);
+  const filters = parseSearchParams(searchParams, lockedOriginCity, lockedDestinationCity);
+  // `initialData` is a one-time SSR snapshot computed for whatever filters
+  // were in the URL at render time — captured once here so it can be scoped
+  // to exactly that combination. React Query treats non-undefined
+  // `initialData` as fresh for `staleTime` regardless of which query key it's
+  // attached to, so without this guard, changing ANY filter (a new query
+  // key) would silently keep showing the original unfiltered SSR result
+  // until an actual page reload recomputed it from scratch.
+  const [initialFilters] = useState(filters);
+  const matchesInitialFilters = JSON.stringify(filters) === JSON.stringify(initialFilters);
 
   const updateFilter = useCallback(
     (key: string, value: string | number | undefined) => {
@@ -62,7 +80,7 @@ export function TripsView({ initialData, cities }: TripsViewProps) {
   const { data, isFetching } = useQuery({
     queryKey: ['trips', filters],
     queryFn: () => tripsApi.getAll(filters),
-    initialData: initialData ?? undefined,
+    initialData: matchesInitialFilters ? initialData ?? undefined : undefined,
     staleTime: 30_000,
     placeholderData: (prev) => prev,
   });
@@ -73,13 +91,21 @@ export function TripsView({ initialData, cities }: TripsViewProps) {
   const currentPage = filters.page ?? 1;
 
   const hasActiveFilters = !!(
-    filters.originCity ||
-    filters.destinationCity ||
+    (!lockedOriginCity && filters.originCity) ||
+    (!lockedDestinationCity && filters.destinationCity) ||
     filters.date ||
-    filters.minSeats
+    filters.minSeats ||
+    filters.priceMin ||
+    filters.priceMax ||
+    filters.pickupPoint ||
+    filters.dropoffPoint ||
+    filters.vehicleSearch
   );
 
   const clearFilters = () => router.push(pathname, { scroll: false });
+
+  const routeHref = (originCity: string, destinationCity: string) =>
+    `/carpool/${originCity.toLowerCase()}-to-${destinationCity.toLowerCase()}/`;
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:gap-6">
@@ -92,6 +118,8 @@ export function TripsView({ initialData, cities }: TripsViewProps) {
             onUpdate={updateFilter}
             hasActiveFilters={hasActiveFilters}
             onClear={clearFilters}
+            lockedOriginCity={lockedOriginCity}
+            lockedDestinationCity={lockedDestinationCity}
           />
         </div>
       </aside>
@@ -149,6 +177,8 @@ export function TripsView({ initialData, cities }: TripsViewProps) {
               onUpdate={updateFilter}
               hasActiveFilters={hasActiveFilters}
               onClear={clearFilters}
+              lockedOriginCity={lockedOriginCity}
+              lockedDestinationCity={lockedDestinationCity}
             />
           </Card>
         )}
@@ -180,7 +210,11 @@ export function TripsView({ initialData, cities }: TripsViewProps) {
               )}
             >
               {trips.map((trip) => (
-                <TripCard key={trip.id} trip={trip} />
+                <TripCard
+                  key={trip.id}
+                  trip={trip}
+                  href={`${routeHref(trip.originCity, trip.destinationCity)}${trip.id}`}
+                />
               ))}
             </div>
 
@@ -203,9 +237,21 @@ interface FilterPanelProps {
   onUpdate: (key: string, value: string | number | undefined) => void;
   hasActiveFilters: boolean;
   onClear: () => void;
+  lockedOriginCity?: string;
+  lockedDestinationCity?: string;
 }
 
-function FilterPanel({ filters, cities, onUpdate, hasActiveFilters, onClear }: FilterPanelProps) {
+function FilterPanel({
+  filters,
+  cities,
+  onUpdate,
+  hasActiveFilters,
+  onClear,
+  lockedOriginCity,
+  lockedDestinationCity,
+}: FilterPanelProps) {
+  const groupLabelCls = 'mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted';
+
   return (
     <Card className="space-y-[18px] bg-page">
       <div className="flex items-center justify-between">
@@ -220,31 +266,35 @@ function FilterPanel({ filters, cities, onUpdate, hasActiveFilters, onClear }: F
         )}
       </div>
 
-      <Select
-        label="Going to"
-        value={filters.destinationCity ?? ''}
-        onChange={(e) => onUpdate('destinationCity', e.target.value || undefined)}
-      >
-        <option value="">Any city</option>
-        {cities.destinations.map((c) => (
-          <option key={c} value={c}>
-            {c.charAt(0).toUpperCase() + c.slice(1)}
-          </option>
-        ))}
-      </Select>
+      {!lockedDestinationCity && (
+        <Select
+          label="Going to"
+          value={filters.destinationCity ?? ''}
+          onChange={(e) => onUpdate('destinationCity', e.target.value || undefined)}
+        >
+          <option value="">Any city</option>
+          {cities.destinations.map((c) => (
+            <option key={c} value={c}>
+              {c.charAt(0).toUpperCase() + c.slice(1)}
+            </option>
+          ))}
+        </Select>
+      )}
 
-      <Select
-        label="Leaving from"
-        value={filters.originCity ?? ''}
-        onChange={(e) => onUpdate('originCity', e.target.value || undefined)}
-      >
-        <option value="">Any city</option>
-        {cities.origins.map((c) => (
-          <option key={c} value={c}>
-            {c.charAt(0).toUpperCase() + c.slice(1)}
-          </option>
-        ))}
-      </Select>
+      {!lockedOriginCity && (
+        <Select
+          label="Leaving from"
+          value={filters.originCity ?? ''}
+          onChange={(e) => onUpdate('originCity', e.target.value || undefined)}
+        >
+          <option value="">Any city</option>
+          {cities.origins.map((c) => (
+            <option key={c} value={c}>
+              {c.charAt(0).toUpperCase() + c.slice(1)}
+            </option>
+          ))}
+        </Select>
+      )}
 
       <Input
         type="date"
@@ -265,6 +315,47 @@ function FilterPanel({ filters, cities, onUpdate, hasActiveFilters, onClear }: F
           </option>
         ))}
       </Select>
+
+      <div>
+        <div className={groupLabelCls}>Price per seat</div>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            placeholder="Min"
+            value={filters.priceMin ?? ''}
+            onChange={(e) => onUpdate('priceMin', e.target.value ? Number(e.target.value) : undefined)}
+            className="w-1/2 rounded-control border border-border-strong bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-600 focus:ring-[3px] focus:ring-brand-600/18"
+          />
+          <input
+            type="number"
+            placeholder="Max"
+            value={filters.priceMax ?? ''}
+            onChange={(e) => onUpdate('priceMax', e.target.value ? Number(e.target.value) : undefined)}
+            className="w-1/2 rounded-control border border-border-strong bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-600 focus:ring-[3px] focus:ring-brand-600/18"
+          />
+        </div>
+      </div>
+
+      <Input
+        label="Vehicle"
+        placeholder="Make or model"
+        value={filters.vehicleSearch ?? ''}
+        onChange={(e) => onUpdate('vehicleSearch', e.target.value || undefined)}
+      />
+
+      <Input
+        label="Pickup point"
+        placeholder="Search pickup point"
+        value={filters.pickupPoint ?? ''}
+        onChange={(e) => onUpdate('pickupPoint', e.target.value || undefined)}
+      />
+
+      <Input
+        label="Drop-off point"
+        placeholder="Search drop-off point"
+        value={filters.dropoffPoint ?? ''}
+        onChange={(e) => onUpdate('dropoffPoint', e.target.value || undefined)}
+      />
     </Card>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { SearchX, SlidersHorizontal } from 'lucide-react';
@@ -12,6 +12,9 @@ import {
 } from '../../lib/api/listings.api';
 import { cn } from '../../lib/utils/cn';
 import { Button, Card, EmptyState, Input, Pagination, PillToggle, Select } from '../ui';
+import { LocationSearch } from '../maps/LocationSearch';
+import { ResultsMap } from '../maps/ResultsMap';
+import { DEFAULT_NEARBY_RADIUS_KM, clearUserLocation, type UserLocation } from '../../lib/utils/userLocation';
 
 const TRANSMISSION_OPTS = [
   { value: '', label: 'Any' },
@@ -39,11 +42,8 @@ interface VehiclesViewProps {
   initialData: ListingsResponse | null;
   makes: string[];
   cities: string[];
-  /** Geolocation-detected city (see HeroSearch) — applied once, client-side,
-   * only when the URL doesn't already specify a city. A `useRef` guard keeps
-   * it from reapplying if the visitor then explicitly clears the filter
-   * within the same page visit. */
-  defaultCity?: string;
+  /** Seeded from the `userLocation` cookie server-side, same pattern the old `defaultCity` used. */
+  initialLocation?: UserLocation | null;
 }
 
 function parseSearchParams(searchParams: URLSearchParams): ListingFilters {
@@ -61,14 +61,23 @@ function parseSearchParams(searchParams: URLSearchParams): ListingFilters {
   };
 }
 
-export function VehiclesView({ initialData, makes, cities, defaultCity }: VehiclesViewProps) {
+export function VehiclesView({ initialData, makes, cities, initialLocation }: VehiclesViewProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
-  const appliedDefault = useRef(false);
+  const [location, setLocation] = useState<UserLocation | null>(initialLocation ?? null);
+  // LocationSearch keeps its own internal "current" display state, seeded
+  // once from the cookie on mount — it has no way to know when the parent
+  // clears location out from under it (e.g. picking a city). Bumping this
+  // key forces LocationSearch to remount and re-read the now-cleared cookie,
+  // so its "Near ..." display doesn't go stale.
+  const [locationKey, setLocationKey] = useState(0);
 
   const filters = parseSearchParams(searchParams);
+  const queryFilters: ListingFilters = location
+    ? { ...filters, lat: location.lat, lng: location.lng, radiusKm: DEFAULT_NEARBY_RADIUS_KM }
+    : filters;
 
   const updateFilter = useCallback(
     (key: string, value: string | number | undefined) => {
@@ -85,19 +94,19 @@ export function VehiclesView({ initialData, makes, cities, defaultCity }: Vehicl
     [router, pathname, searchParams],
   );
 
-  useEffect(() => {
-    if (appliedDefault.current) return;
-    appliedDefault.current = true;
-    if (defaultCity && !searchParams.get('city')) {
-      updateFilter('city', defaultCity);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // `initialData` is a one-time SSR snapshot computed for whatever location
+  // was active at render time (initialLocation) — once the visitor changes
+  // location client-side, that snapshot no longer matches the new query key.
+  // React Query treats non-undefined `initialData` as fresh for `staleTime`
+  // regardless of which key it's attached to, so without this guard a
+  // location change would silently keep showing the stale SSR result until
+  // an actual page reload recomputed it from scratch.
+  const matchesInitialLocation = location === (initialLocation ?? null);
 
   const { data, isFetching } = useQuery({
-    queryKey: ['listings', filters],
-    queryFn: () => listingsApi.getAll(filters),
-    initialData: initialData ?? undefined,
+    queryKey: ['listings', queryFilters],
+    queryFn: () => listingsApi.getAll(queryFilters),
+    initialData: matchesInitialLocation ? initialData ?? undefined : undefined,
     staleTime: 60_000,
     placeholderData: (prev) => prev,
   });
@@ -106,6 +115,14 @@ export function VehiclesView({ initialData, makes, cities, defaultCity }: Vehicl
   const meta = data?.meta;
   const totalPages = meta?.totalPages ?? 1;
   const currentPage = filters.page ?? 1;
+  const mapPins = vehicles
+    .filter((v) => v.showroom?.mapLat != null && v.showroom?.mapLng != null)
+    .map((v) => ({
+      id: v.id,
+      lat: v.showroom!.mapLat as number,
+      lng: v.showroom!.mapLng as number,
+      label: v.title,
+    }));
 
   const hasActiveFilters = !!(
     filters.search ||
@@ -120,6 +137,29 @@ export function VehiclesView({ initialData, makes, cities, defaultCity }: Vehicl
 
   const clearFilters = () => {
     router.push(pathname, { scroll: false });
+    if (location) {
+      clearUserLocation();
+      setLocation(null);
+      setLocationKey((k) => k + 1);
+    }
+  };
+
+  // "City" and "Near me" are alternative ways to narrow results, not
+  // combinable filters — otherwise picking a city (or "All cities") while a
+  // location is still set from an earlier visit silently keeps restricting
+  // results to that old location, which looks like the city filter is broken.
+  const handleCityChange = (value: string | undefined) => {
+    updateFilter('city', value);
+    if (location) {
+      clearUserLocation();
+      setLocation(null);
+      setLocationKey((k) => k + 1);
+    }
+  };
+
+  const handleLocationChange = (next: UserLocation | null) => {
+    setLocation(next);
+    if (next && filters.city) updateFilter('city', undefined);
   };
 
   return (
@@ -131,8 +171,13 @@ export function VehiclesView({ initialData, makes, cities, defaultCity }: Vehicl
           makes={makes}
           cities={cities}
           onUpdate={updateFilter}
+          onCityChange={handleCityChange}
           hasActiveFilters={hasActiveFilters}
           onClear={clearFilters}
+          onLocationChange={handleLocationChange}
+          locationKey={locationKey}
+          location={location}
+          mapPins={mapPins}
         />
       </aside>
 
@@ -188,8 +233,13 @@ export function VehiclesView({ initialData, makes, cities, defaultCity }: Vehicl
               makes={makes}
               cities={cities}
               onUpdate={updateFilter}
+              onCityChange={handleCityChange}
               hasActiveFilters={hasActiveFilters}
               onClear={clearFilters}
+              onLocationChange={handleLocationChange}
+              locationKey={locationKey}
+              location={location}
+              mapPins={mapPins}
             />
           </Card>
         )}
@@ -239,11 +289,28 @@ interface FilterPanelProps {
   makes: string[];
   cities: string[];
   onUpdate: (key: string, value: string | number | undefined) => void;
+  onCityChange: (value: string | undefined) => void;
   hasActiveFilters: boolean;
   onClear: () => void;
+  onLocationChange: (location: UserLocation | null) => void;
+  locationKey: number;
+  location: UserLocation | null;
+  mapPins: { id: string; lat: number; lng: number; label: string }[];
 }
 
-function FilterPanel({ filters, makes, cities, onUpdate, hasActiveFilters, onClear }: FilterPanelProps) {
+function FilterPanel({
+  filters,
+  makes,
+  cities,
+  onUpdate,
+  onCityChange,
+  hasActiveFilters,
+  onClear,
+  onLocationChange,
+  locationKey,
+  location,
+  mapPins,
+}: FilterPanelProps) {
   const groupLabelCls = 'mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted';
 
   return (
@@ -274,7 +341,7 @@ function FilterPanel({ filters, makes, cities, onUpdate, hasActiveFilters, onCle
       </Select>
 
       {cities.length > 0 && (
-        <Select label="City" value={filters.city ?? ''} onChange={(e) => onUpdate('city', e.target.value || undefined)}>
+        <Select label="City" value={filters.city ?? ''} onChange={(e) => onCityChange(e.target.value || undefined)}>
           <option value="">All cities</option>
           {cities.map((c) => (
             <option key={c} value={c}>
@@ -283,6 +350,19 @@ function FilterPanel({ filters, makes, cities, onUpdate, hasActiveFilters, onCle
           ))}
         </Select>
       )}
+
+      <div>
+        <div className={groupLabelCls}>Near me</div>
+        <LocationSearch key={locationKey} onLocationChange={onLocationChange} />
+        {location && mapPins.length > 0 && (
+          <ResultsMap
+            className="mt-2.5 h-48 w-full overflow-hidden rounded-media border border-border-subtle"
+            center={{ lat: location.lat, lng: location.lng }}
+            radiusKm={DEFAULT_NEARBY_RADIUS_KM}
+            pins={mapPins}
+          />
+        )}
+      </div>
 
       <div>
         {/* No single currency applies here — results can span multiple markets; each result card shows its own. */}

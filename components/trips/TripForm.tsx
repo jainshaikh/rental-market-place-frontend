@@ -10,6 +10,7 @@ import { useMyApprovedUserVehicles } from '../../hooks/useUserVehicles';
 import { tripSchema, type TripFormValues } from '../../lib/validations/trip.schema';
 import { getCurrencyCode } from '../../lib/utils/currency';
 import { Button, Card, EmptyState, Input, Select, Textarea } from '../ui';
+import { MapLocationField } from '../maps/MapLocationField';
 
 interface TripFormProps {
   cancelHref: string;
@@ -37,11 +38,29 @@ export function TripForm({ cancelHref, detailBasePath, addVehicleHref }: TripFor
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<TripFormValues>({
     resolver: zodResolver(tripSchema),
     defaultValues: { availableSeats: 3 },
   });
+
+  // Three ways to fill these in: search + pick a Places suggestion, click/drag
+  // a pin directly on the map (reverse-geocoded to fill the text automatically),
+  // or just type a free-text landmark Places doesn't know about — coordinates
+  // are best-effort, never required for submission.
+  const handlePickupAddressChange = (text: string) =>
+    setValue('pickupPoint', text, { shouldValidate: true, shouldDirty: true });
+  const handlePickupLocationChange = (lat: number, lng: number) => {
+    setValue('pickupLat', lat, { shouldDirty: true });
+    setValue('pickupLng', lng, { shouldDirty: true });
+  };
+  const handleDropoffAddressChange = (text: string) =>
+    setValue('dropoffPoint', text, { shouldValidate: true, shouldDirty: true });
+  const handleDropoffLocationChange = (lat: number, lng: number) => {
+    setValue('dropoffLat', lat, { shouldDirty: true });
+    setValue('dropoffLng', lng, { shouldDirty: true });
+  };
 
   // A vehicle owner's registered vehicles could in principle span markets, so
   // the currency follows whichever vehicle is actually selected, not a fixed default.
@@ -137,18 +156,26 @@ export function TripForm({ cancelHref, detailBasePath, addVehicleHref }: TripFor
             />
           </div>
 
-          <Input
+          <MapLocationField
             label="Pickup point"
             required
+            addressValue={watch('pickupPoint') ?? ''}
+            onAddressChange={handlePickupAddressChange}
+            lat={watch('pickupLat')}
+            lng={watch('pickupLng')}
+            onLocationChange={handlePickupLocationChange}
             placeholder="e.g. Liaquatabad Chowrangi, near Total Petrol Pump"
             error={errors.pickupPoint?.message}
-            {...register('pickupPoint')}
           />
 
-          <Input
+          <MapLocationField
             label="Drop-off point"
+            addressValue={watch('dropoffPoint') ?? ''}
+            onAddressChange={handleDropoffAddressChange}
+            lat={watch('dropoffLat')}
+            lng={watch('dropoffLng')}
+            onLocationChange={handleDropoffLocationChange}
             placeholder="e.g. Karachi Cantt Station"
-            {...register('dropoffPoint')}
           />
 
           <Input

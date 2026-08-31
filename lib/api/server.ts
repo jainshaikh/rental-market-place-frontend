@@ -67,9 +67,20 @@ export async function fetchVehicleBySlug(slug: string) {
   return serverFetch<ServerVehicleDetailResponse>(`/listings/${slug}`, { revalidate: false });
 }
 
-export async function fetchFeaturedListings(limit = 8, city?: string) {
+export async function fetchFeaturedListings(
+  limit = 8,
+  city?: string,
+  lat?: number,
+  lng?: number,
+  radiusKm?: number,
+) {
   const qs = new URLSearchParams({ limit: String(limit) });
   if (city) qs.set('city', city);
+  if (lat !== undefined && lng !== undefined) {
+    qs.set('lat', String(lat));
+    qs.set('lng', String(lng));
+    if (radiusKm !== undefined) qs.set('radiusKm', String(radiusKm));
+  }
   return serverFetch<{ success: boolean; data: import('../api/listings.api').ListingVehicleCard[] }>(
     `/listings/featured?${qs}`,
     { revalidate: 300, tags: ['featured-listings'] },
@@ -121,9 +132,21 @@ export interface ServerProviderDetailResponse {
   data: import('./providers.api').PublicProviderDetail;
 }
 
-export async function fetchAllProviders(page = 1, limit = 12, city?: string) {
+export async function fetchAllProviders(
+  page = 1,
+  limit = 12,
+  city?: string,
+  lat?: number,
+  lng?: number,
+  radiusKm?: number,
+) {
   const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (city) qs.set('city', city);
+  if (lat !== undefined && lng !== undefined) {
+    qs.set('lat', String(lat));
+    qs.set('lng', String(lng));
+    if (radiusKm !== undefined) qs.set('radiusKm', String(radiusKm));
+  }
   return serverFetch<ServerProvidersResponse>(`/providers?${qs}`, {
     revalidate: 120,
     tags: ['providers'],
@@ -173,6 +196,13 @@ export async function fetchTripMetaCities() {
   return serverFetch<{ success: boolean; data: import('../api/trips.api').TripMetaCities }>(
     '/trips/meta/cities',
     { revalidate: 300 },
+  );
+}
+
+export async function fetchTripRouteGroups() {
+  return serverFetch<{ success: boolean; data: import('../api/trips.api').TripRouteGroup[] }>(
+    '/trips/meta/routes',
+    { revalidate: 60 },
   );
 }
 

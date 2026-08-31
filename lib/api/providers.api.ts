@@ -59,8 +59,10 @@ export interface PublicProviderCard {
   businessDescription: string | null;
   isFeatured: boolean;
   updatedAt: string;
-  showrooms: { city: string; area: string | null }[];
+  showrooms: { city: string; area: string | null; mapLat: number | null; mapLng: number | null }[];
   _count: { vehicles: number };
+  /** Only present when the request included lat/lng (nearby search). */
+  distanceKm?: number;
 }
 
 export interface PublicProviderShowroom {
@@ -146,9 +148,16 @@ export const providersApi = {
   },
 
   // Public directory
-  getAllPublic: async (page = 1, limit = 12, city?: string): Promise<ProvidersListResponse> => {
+  getAllPublic: async (
+    page = 1,
+    limit = 12,
+    city?: string,
+    lat?: number,
+    lng?: number,
+    radiusKm?: number,
+  ): Promise<ProvidersListResponse> => {
     const res = await apiClient.get<ApiResponse<PublicProviderCard[]>>('/providers', {
-      params: { page, limit, city: city || undefined },
+      params: { page, limit, city: city || undefined, lat, lng, radiusKm },
     });
     return { data: res.data.data, meta: res.data.meta as PaginationMeta };
   },

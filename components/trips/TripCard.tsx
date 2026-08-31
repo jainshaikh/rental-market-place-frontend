@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Car, Image as ImageIcon } from 'lucide-react';
+import { ArrowRight, Car, Image as ImageIcon, MapPin } from 'lucide-react';
 import { cn } from '../../lib/utils/cn';
 import type { TripCard as TripCardType } from '../../lib/api/trips.api';
 import { getCurrencyCode } from '../../lib/utils/currency';
@@ -117,6 +117,14 @@ export function TripCard({ trip, className, href }: TripCardProps) {
           <span className="truncate">
             {trip.userVehicle.make} {trip.userVehicle.model}
             {trip.userVehicle.color ? ` · ${trip.userVehicle.color}` : ''}
+          </span>
+        </p>
+
+        <p className="mt-1.5 flex items-start gap-1.5 text-xs text-text-muted">
+          <MapPin className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-text-faint" />
+          <span className="line-clamp-1">
+            {trip.pickupPoint}
+            {trip.dropoffPoint ? ` → ${trip.dropoffPoint}` : ''}
           </span>
         </p>
 

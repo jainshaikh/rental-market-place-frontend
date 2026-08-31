@@ -36,22 +36,37 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
+// ── Shared refresh — single in-flight call app-wide ──────────────────────────
+// Both the 401 response interceptor below and AuthBootstrap's proactive
+// refresh-on-load call this. Without a single shared promise, two refresh
+// attempts landing close together (React StrictMode double-invoking
+// AuthBootstrap's effect in dev, or an authenticated query firing before the
+// bootstrap finishes) would each present the same not-yet-rotated refresh
+// token — the backend rotates it immediately, so whichever request loses the
+// race gets treated as a replay and the whole session is killed. Coalescing
+// every caller onto one promise means at most one POST /auth/refresh is ever
+// in flight per page load.
+let refreshPromise: Promise<string> | null = null;
+
+export function refreshAccessToken(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = apiClient
+      .post<{ data: { accessToken: string } }>('/auth/refresh')
+      .then((response) => {
+        const newToken = response.data.data.accessToken;
+        setAccessToken(newToken);
+        return newToken;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
 // ── Response interceptor ─────────────────────────────────────────────────────
 // On 401: attempt silent token refresh, then retry original request once.
 // On refresh failure: clear auth state and redirect to login.
-
-let isRefreshing = false;
-let refreshSubscribers: Array<(token: string) => void> = [];
-
-function subscribeToRefresh(callback: (token: string) => void) {
-  refreshSubscribers.push(callback);
-}
-
-function notifyRefreshSubscribers(token: string) {
-  refreshSubscribers.forEach((cb) => cb(token));
-  refreshSubscribers = [];
-}
-
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -64,33 +79,16 @@ apiClient.interceptors.response.use(
       !originalRequest.url?.includes('/auth/refresh') &&
       !originalRequest.url?.includes('/auth/login')
     ) {
-      if (isRefreshing) {
-        // Queue up requests while refresh is in progress
-        return new Promise((resolve) => {
-          subscribeToRefresh((newToken: string) => {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            resolve(apiClient(originalRequest));
-          });
-        });
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
 
       try {
-        const response = await apiClient.post<{ data: { accessToken: string } }>('/auth/refresh');
-        const newToken = response.data.data.accessToken;
-
-        setAccessToken(newToken);
-        notifyRefreshSubscribers(newToken);
-
+        const newToken = await refreshAccessToken();
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(originalRequest);
       } catch {
         // Refresh failed — clear auth state and redirect to login.
         // MUST remove userRole cookie so middleware doesn't redirect back and create a loop.
         setAccessToken(null);
-        refreshSubscribers = [];
 
         if (typeof window !== 'undefined') {
           Cookies.remove('userRole');
@@ -98,8 +96,6 @@ apiClient.interceptors.response.use(
         }
 
         return Promise.reject(error);
-      } finally {
-        isRefreshing = false;
       }
     }
 

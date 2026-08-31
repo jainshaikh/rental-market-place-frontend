@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { fetchAllProviders, fetchDistinctCities } from '../../../lib/api/server';
 import { ProvidersView } from '../../../components/providers/ProvidersView';
 import type { ProvidersListResponse } from '../../../lib/api/providers.api';
+import { USER_LOCATION_COOKIE, DEFAULT_NEARBY_RADIUS_KM, parseUserLocation } from '../../../lib/utils/userLocation';
 
 export const metadata: Metadata = {
   title: 'Verified Car Rental Providers in Pakistan',
@@ -21,12 +22,10 @@ interface PageProps {
 export default async function ProvidersPage({ searchParams }: PageProps) {
   const page = Number(searchParams.page ?? 1);
   const city = searchParams.city;
-  // Same geolocation cookie HeroSearch sets — only used as an initial
-  // default when the visitor hasn't already picked a city on this page.
-  const preferredCity = cookies().get('preferredCity')?.value;
+  const location = parseUserLocation(cookies().get(USER_LOCATION_COOKIE)?.value);
 
   const [providersRes, citiesRes] = await Promise.all([
-    fetchAllProviders(page, 12, city ?? preferredCity),
+    fetchAllProviders(page, 12, city, location?.lat, location?.lng, location ? DEFAULT_NEARBY_RADIUS_KM : undefined),
     fetchDistinctCities(),
   ]);
 
@@ -34,24 +33,27 @@ export default async function ProvidersPage({ searchParams }: PageProps) {
     ? { data: providersRes.data, meta: providersRes.meta as ProvidersListResponse['meta'] }
     : null;
   const cities = citiesRes?.data ?? [];
-  const effectiveCity = city ?? preferredCity;
-  const cityLabel = effectiveCity ? effectiveCity.charAt(0).toUpperCase() + effectiveCity.slice(1) : null;
+  const cityLabel = city ? city.charAt(0).toUpperCase() + city.slice(1) : null;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900">
-          {cityLabel ? `Rental Providers in ${cityLabel}` : 'Rental Providers'}
+          {cityLabel
+            ? `Rental Providers in ${cityLabel}`
+            : location
+              ? `Rental Providers near ${location.label}`
+              : 'Rental Providers'}
         </h1>
         <p className="mt-2 text-slate-500">
           {initialData?.meta
-            ? `${initialData.meta.total} verified provider${initialData.meta.total !== 1 ? 's' : ''} ${cityLabel ? `in ${cityLabel}` : 'across Pakistan'}`
+            ? `${initialData.meta.total} verified provider${initialData.meta.total !== 1 ? 's' : ''} ${cityLabel ? `in ${cityLabel}` : location ? `near ${location.label}` : 'across Pakistan'}`
             : 'Browse verified rental providers'}
         </p>
       </div>
 
-      <ProvidersView initialData={initialData} cities={cities} defaultCity={preferredCity} />
+      <ProvidersView initialData={initialData} cities={cities} initialLocation={location} />
     </div>
   );
 }

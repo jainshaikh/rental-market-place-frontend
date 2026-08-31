@@ -1,27 +1,33 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { providersApi, type ProvidersListResponse } from '../../lib/api/providers.api';
 import { ProviderCard } from './ProviderCard';
 import { Pagination, Select } from '../ui';
+import { LocationSearch } from '../maps/LocationSearch';
+import { ResultsMap } from '../maps/ResultsMap';
+import { DEFAULT_NEARBY_RADIUS_KM, clearUserLocation, type UserLocation } from '../../lib/utils/userLocation';
 
 interface ProvidersViewProps {
   initialData: ProvidersListResponse | null;
   cities: string[];
-  /** Geolocation-detected city (see HeroSearch) — applied once, client-side,
-   * only when the URL doesn't already specify a city. A `useRef` guard keeps
-   * it from reapplying if the visitor then explicitly clears the filter
-   * within the same page visit. */
-  defaultCity?: string;
+  /** Seeded from the `userLocation` cookie server-side, same pattern the old `defaultCity` used. */
+  initialLocation?: UserLocation | null;
 }
 
-export function ProvidersView({ initialData, cities, defaultCity }: ProvidersViewProps) {
+export function ProvidersView({ initialData, cities, initialLocation }: ProvidersViewProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const appliedDefault = useRef(false);
+  const [location, setLocation] = useState<UserLocation | null>(initialLocation ?? null);
+  // LocationSearch keeps its own internal "current" display state, seeded
+  // once from the cookie on mount — it has no way to know when the parent
+  // clears location out from under it (e.g. picking a city). Bumping this
+  // key forces LocationSearch to remount and re-read the now-cleared cookie,
+  // so its "Near ..." display doesn't go stale.
+  const [locationKey, setLocationKey] = useState(0);
 
   const city = searchParams.get('city') || undefined;
   const page = searchParams.get('page') ? Number(searchParams.get('page')) : 1;
@@ -37,19 +43,38 @@ export function ProvidersView({ initialData, cities, defaultCity }: ProvidersVie
     router.push(`${pathname}${params.size ? `?${params}` : ''}`, { scroll: false });
   };
 
-  useEffect(() => {
-    if (appliedDefault.current) return;
-    appliedDefault.current = true;
-    if (defaultCity && !searchParams.get('city')) {
-      updateParam('city', defaultCity);
+  // "City" and "Near me" are alternative ways to narrow the list, not
+  // combinable filters — otherwise picking a city (or "All cities") while a
+  // location is still set from an earlier visit silently keeps restricting
+  // results to that old location, which looks like the city filter is broken.
+  const handleCityChange = (value: string | undefined) => {
+    updateParam('city', value);
+    if (location) {
+      clearUserLocation();
+      setLocation(null);
+      setLocationKey((k) => k + 1);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  };
+
+  const handleLocationChange = (next: UserLocation | null) => {
+    setLocation(next);
+    if (next && city) updateParam('city', undefined);
+  };
+
+  // `initialData` is a one-time SSR snapshot computed for whatever location
+  // was active at render time (initialLocation) — once the visitor changes
+  // location client-side, that snapshot no longer matches the new query key.
+  // React Query treats non-undefined `initialData` as fresh for `staleTime`
+  // regardless of which key it's attached to, so without this guard a
+  // location change would silently keep showing the stale SSR result until
+  // an actual page reload recomputed it from scratch.
+  const matchesInitialLocation = location === (initialLocation ?? null);
 
   const { data, isFetching } = useQuery({
-    queryKey: ['providers', city, page],
-    queryFn: () => providersApi.getAllPublic(page, 12, city),
-    initialData: initialData ?? undefined,
+    queryKey: ['providers', city, page, location],
+    queryFn: () =>
+      providersApi.getAllPublic(page, 12, city, location?.lat, location?.lng, location ? DEFAULT_NEARBY_RADIUS_KM : undefined),
+    initialData: matchesInitialLocation ? initialData ?? undefined : undefined,
     staleTime: 60_000,
     placeholderData: (prev) => prev,
   });
@@ -62,7 +87,7 @@ export function ProvidersView({ initialData, cities, defaultCity }: ProvidersVie
       {cities.length > 0 && (
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div className="w-full max-w-[220px]">
-            <Select label="City" value={city ?? ''} onChange={(e) => updateParam('city', e.target.value || undefined)}>
+            <Select label="City" value={city ?? ''} onChange={(e) => handleCityChange(e.target.value || undefined)}>
               <option value="">All cities</option>
               {cities.map((c) => (
                 <option key={c} value={c}>
@@ -73,13 +98,31 @@ export function ProvidersView({ initialData, cities, defaultCity }: ProvidersVie
           </div>
           {city && (
             <button
-              onClick={() => updateParam('city', undefined)}
+              onClick={() => handleCityChange(undefined)}
               className="text-xs font-semibold text-primary hover:underline"
             >
               Clear city filter
             </button>
           )}
         </div>
+      )}
+
+      <LocationSearch key={locationKey} className="mb-6" onLocationChange={handleLocationChange} />
+
+      {location && providers.length > 0 && (
+        <ResultsMap
+          className="mb-6 h-72 w-full overflow-hidden rounded-2xl border border-slate-200"
+          center={{ lat: location.lat, lng: location.lng }}
+          radiusKm={DEFAULT_NEARBY_RADIUS_KM}
+          pins={providers
+            .filter((p) => p.showrooms?.[0]?.mapLat != null && p.showrooms?.[0]?.mapLng != null)
+            .map((p) => ({
+              id: p.id,
+              lat: p.showrooms[0].mapLat as number,
+              lng: p.showrooms[0].mapLng as number,
+              label: p.businessName,
+            }))}
+        />
       )}
 
       {providers.length === 0 ? (
@@ -99,7 +142,7 @@ export function ProvidersView({ initialData, cities, defaultCity }: ProvidersVie
           </p>
           <p className="mt-1 text-sm text-slate-400">
             {city ? (
-              <button onClick={() => updateParam('city', undefined)} className="hover:underline">
+              <button onClick={() => handleCityChange(undefined)} className="hover:underline">
                 Browse all cities
               </button>
             ) : (

@@ -29,6 +29,7 @@ import { ImageUpload } from '../../../../components/uploads/ImageUpload';
 import { DocumentUpload } from '../../../../components/uploads/DocumentUpload';
 import { StatusBadge } from '../../../../components/common/StatusBadge';
 import { PersonalInformationSection } from '../../../../components/account/PersonalInformationSection';
+import { MapLocationPicker } from '../../../../components/maps/MapLocationPicker';
 
 type TabKey = 'profile' | 'logo' | 'showroom' | 'documents' | 'submit' | 'account';
 
@@ -348,6 +349,8 @@ export default function ProviderProfilePage() {
                             area: existingShowroom.area ?? '',
                             contactNumber: existingShowroom.contactNumber,
                             whatsappNumber: existingShowroom.whatsappNumber ?? '',
+                            mapLat: existingShowroom.mapLat ?? undefined,
+                            mapLng: existingShowroom.mapLng ?? undefined,
                           });
                           setEditingShowroom(true);
                         }}
@@ -474,10 +477,19 @@ export default function ProviderProfilePage() {
                   <label className="mb-1.5 block text-sm font-medium text-slate-700">
                     Address <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    {...showroomForm.register('address')}
+                  <MapLocationPicker
+                    addressValue={showroomForm.watch('address') ?? ''}
+                    onAddressChange={(text) =>
+                      showroomForm.setValue('address', text, { shouldValidate: true, shouldDirty: true })
+                    }
+                    lat={showroomForm.watch('mapLat')}
+                    lng={showroomForm.watch('mapLng')}
+                    onLocationChange={(lat, lng) => {
+                      showroomForm.setValue('mapLat', lat, { shouldDirty: true });
+                      showroomForm.setValue('mapLng', lng, { shouldDirty: true });
+                    }}
                     placeholder="Shop 12, Main Boulevard, Gulberg"
-                    className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    inputClassName="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                   {showroomForm.formState.errors.address && (
                     <p className="mt-1 text-xs text-destructive">

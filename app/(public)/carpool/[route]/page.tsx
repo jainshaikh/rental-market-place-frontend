@@ -1,14 +1,16 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, ChevronRight } from 'lucide-react';
-import { fetchTrips } from '../../../../lib/api/server';
-import { TripCard } from '../../../../components/trips/TripCard';
-import type { TripCard as TripCardType } from '../../../../lib/api/trips.api';
+import { fetchTrips, fetchTripMetaCities } from '../../../../lib/api/server';
+import { TripsView } from '../../../../components/trips/TripsView';
+import type { TripsResponse, TripMetaCities } from '../../../../lib/api/trips.api';
 import { TrackEvent } from '../../../../components/common/TrackEvent';
 
 interface PageProps {
   params: { route: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 }
 
 function toDisplayName(value: string): string {
@@ -92,7 +94,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function CarpoolRoutePage({ params }: PageProps) {
+export default async function CarpoolRoutePage({ params, searchParams }: PageProps) {
   const parsed = parseRoute(params.route);
   if (!parsed) notFound();
 
@@ -100,13 +102,21 @@ export default async function CarpoolRoutePage({ params }: PageProps) {
   const originName = toDisplayName(origin);
   const destinationName = destination ? toDisplayName(destination) : null;
 
-  const tripsRes = await fetchTrips({
+  const effectiveSearchParams = {
+    ...searchParams,
     originCity: origin,
     ...(destination ? { destinationCity: destination } : {}),
-    sort: 'departure_asc',
-    limit: '24',
-  });
-  const trips: TripCardType[] = tripsRes?.data ?? [];
+  };
+
+  const [tripsRes, citiesRes] = await Promise.all([
+    fetchTrips(effectiveSearchParams),
+    fetchTripMetaCities(),
+  ]);
+
+  const initialData: TripsResponse | null = tripsRes
+    ? { data: tripsRes.data, meta: tripsRes.meta as TripsResponse['meta'] }
+    : null;
+  const cities: TripMetaCities = citiesRes?.data ?? { origins: [], destinations: [] };
   const total = tripsRes?.meta?.total ?? 0;
 
   const routeSlug = destination ? `${origin}-to-${destination}` : origin;
@@ -173,30 +183,20 @@ export default async function CarpoolRoutePage({ params }: PageProps) {
         </p>
       </div>
 
-      {trips.length > 0 ? (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {trips.map((trip) => (
-            <TripCard
-              key={trip.id}
-              trip={trip}
-              href={`/carpool/${trip.originCity.toLowerCase()}-to-${trip.destinationCity.toLowerCase()}/${trip.id}`}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="rounded-xl border border-slate-200 bg-white py-16 text-center">
-          <p className="text-slate-600">
-            No rides {destinationName ? 'on this route' : `from ${originName}`} right now — check
-            back soon, or browse all trips.
-          </p>
-          <Link
-            href="/carpool"
-            className="mt-4 inline-block text-sm font-semibold text-brand-700 hover:underline"
-          >
-            Browse all trips
-          </Link>
-        </div>
-      )}
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center py-16">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
+          </div>
+        }
+      >
+        <TripsView
+          initialData={initialData}
+          cities={cities}
+          lockedOriginCity={origin}
+          lockedDestinationCity={destination ?? undefined}
+        />
+      </Suspense>
 
       <div className="mt-8 flex flex-wrap gap-3 border-t border-border-subtle pt-6">
         <Link
@@ -204,15 +204,6 @@ export default async function CarpoolRoutePage({ params }: PageProps) {
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:underline"
         >
           {destinationName ? 'Driving this route? Post your trip' : `Driving from ${originName}? Post your trip`}
-          <ChevronRight className="h-4 w-4" />
-        </Link>
-        <Link
-          href={`/carpool?originCity=${encodeURIComponent(origin)}${
-            destination ? `&destinationCity=${encodeURIComponent(destination)}` : ''
-          }`}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:underline"
-        >
-          More filters &amp; sort options
           <ChevronRight className="h-4 w-4" />
         </Link>
       </div>

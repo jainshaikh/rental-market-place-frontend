@@ -26,7 +26,11 @@ export interface TripCard {
   originCity: string;
   destinationCity: string;
   pickupPoint: string;
+  pickupLat: number | null;
+  pickupLng: number | null;
   dropoffPoint: string | null;
+  dropoffLat: number | null;
+  dropoffLng: number | null;
   departureAt: string;
   availableSeats: number;
   pricePerSeat: string | number;
@@ -53,6 +57,12 @@ export interface TripFilters {
   sort?: 'departure_asc' | 'price_asc' | 'price_desc' | 'newest';
   page?: number;
   limit?: number;
+  priceMin?: number;
+  priceMax?: number;
+  pickupPoint?: string;
+  dropoffPoint?: string;
+  /** Free-text match against the trip's vehicle make or model. */
+  vehicleSearch?: string;
 }
 
 export interface TripsResponse {
@@ -65,6 +75,14 @@ export interface TripMetaCities {
   destinations: string[];
 }
 
+export interface TripRouteGroup {
+  originCity: string;
+  destinationCity: string;
+  tripCount: number;
+  minPricePerSeat: string | number | null;
+  nextDepartureAt: string | null;
+}
+
 // ── Poster shapes ─────────────────────────────────────────────────────────
 
 export interface CreateTripPayload {
@@ -72,7 +90,11 @@ export interface CreateTripPayload {
   originCity: string;
   destinationCity: string;
   pickupPoint: string;
+  pickupLat?: number;
+  pickupLng?: number;
   dropoffPoint?: string;
+  dropoffLat?: number;
+  dropoffLng?: number;
   departureAt: string;
   availableSeats: number;
   pricePerSeat: number;
@@ -105,6 +127,11 @@ export const tripsApi = {
 
   getMetaCities: async (): Promise<TripMetaCities> => {
     const res = await apiClient.get<ApiResponse<TripMetaCities>>('/trips/meta/cities');
+    return res.data.data;
+  },
+
+  getRouteGroups: async (): Promise<TripRouteGroup[]> => {
+    const res = await apiClient.get<ApiResponse<TripRouteGroup[]>>('/trips/meta/routes');
     return res.data.data;
   },
 

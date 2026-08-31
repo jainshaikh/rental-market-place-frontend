@@ -5,7 +5,11 @@ export const tripSchema = z.object({
   originCity: z.string().min(2, 'Origin city is required').max(100),
   destinationCity: z.string().min(2, 'Destination city is required').max(100),
   pickupPoint: z.string().min(3, 'Pickup point is required').max(300),
+  pickupLat: z.number().min(-90).max(90).optional(),
+  pickupLng: z.number().min(-180).max(180).optional(),
   dropoffPoint: z.string().max(300).optional().or(z.literal('')),
+  dropoffLat: z.number().min(-90).max(90).optional(),
+  dropoffLng: z.number().min(-180).max(180).optional(),
   departureAt: z
     .string()
     .min(1, 'Select a departure date & time')
