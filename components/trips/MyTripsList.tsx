@@ -8,6 +8,7 @@ import { useMyTrips, useCancelTrip } from '../../hooks/useTrips';
 import { StatusBadge } from '../common/StatusBadge';
 import { buttonVariants, Card, ConfirmDialog, EmptyState } from '../ui';
 import { getCurrencyCode } from '../../lib/utils/currency';
+import { formatTripDateTime } from '../../lib/utils/datetime';
 
 interface MyTripsListProps {
   basePath: string; // e.g. '/dashboard/trips'
@@ -84,10 +85,7 @@ export function MyTripsList({ basePath, newHref }: MyTripsListProps) {
 
                   <p className="mt-1 font-mono text-xs text-text-muted">
                     {trip.userVehicle.make} {trip.userVehicle.model} ·{' '}
-                    {new Date(trip.departureAt).toLocaleString('en-PK', {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    })}
+                    {formatTripDateTime(trip.departureAt)} PKT
                   </p>
 
                   <div className="mt-2.5 flex flex-wrap items-center gap-4">

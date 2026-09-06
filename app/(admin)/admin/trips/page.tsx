@@ -17,6 +17,7 @@ import {
 } from '../../../../components/admin';
 import { Avatar, Button } from '../../../../components/ui';
 import { getCurrencyCode } from '../../../../lib/utils/currency';
+import { formatTripDateTime } from '../../../../lib/utils/datetime';
 
 const STATUS_TABS = [
   { label: 'Active', value: 'ACTIVE' },
@@ -100,10 +101,7 @@ export default function AdminTripsPage() {
                 </span>
               </td>
               <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-text-muted">
-                {new Date(trip.departureAt).toLocaleString('en-PK', {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                })}
+                {formatTripDateTime(trip.departureAt)} PKT
               </td>
               <td className="whitespace-nowrap px-4 py-3 font-mono font-medium text-ink">
                 {getCurrencyCode(trip.userVehicle?.country)} {Number(trip.pricePerSeat).toLocaleString()}

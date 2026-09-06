@@ -9,6 +9,7 @@ import type { TripInquiry } from '../../lib/api/trip-inquiries.api';
 import { Card, ConfirmDialog, EmptyState, Pagination } from '../ui';
 import { StatusBadge } from '../common/StatusBadge';
 import { cn } from '../../lib/utils/cn';
+import { formatTripDateTime } from '../../lib/utils/datetime';
 
 function titleCase(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -86,10 +87,7 @@ export function MyTripInquiriesList() {
                 </div>
 
                 <div className="mt-2 font-mono text-xs text-text-muted">
-                  {new Date(inquiry.trip.departureAt).toLocaleString('en-PK', {
-                    dateStyle: 'medium',
-                    timeStyle: 'short',
-                  })}
+                  {formatTripDateTime(inquiry.trip.departureAt)} PKT
                 </div>
 
                 {inquiry.status === 'ACCEPTED' && (

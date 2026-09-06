@@ -2,9 +2,16 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, BadgeCheck, ChevronRight } from 'lucide-react';
+import { ArrowRight, BadgeCheck, ChevronRight, Clock, Route as RouteIcon } from 'lucide-react';
 import { fetchTripById } from '../../../../../lib/api/server';
 import { getCurrencyCode } from '../../../../../lib/utils/currency';
+import {
+  estimateArrival,
+  formatDuration,
+  formatTripDate,
+  formatTripDateTime,
+  formatTripTime,
+} from '../../../../../lib/utils/datetime';
 import { Button, Card, WhatsAppButton } from '../../../../../components/ui';
 import { RatingSummaryBadge } from '../../../../../components/common/RatingSummaryBadge';
 import { ReviewsList } from '../../../../../components/common/ReviewsList';
@@ -22,7 +29,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!res?.data) return { title: 'Trip Not Found' };
 
   const t = res.data;
-  const description = `Trip from ${titleCase(t.originCity)} to ${titleCase(t.destinationCity)} on ${new Date(t.departureAt).toLocaleDateString()}. ${getCurrencyCode(t.userVehicle?.country)} ${Number(t.pricePerSeat).toLocaleString()} per seat.`;
+  const description = `Trip from ${titleCase(t.originCity)} to ${titleCase(t.destinationCity)} on ${formatTripDate(t.departureAt, { dateStyle: 'medium' })}. ${getCurrencyCode(t.userVehicle?.country)} ${Number(t.pricePerSeat).toLocaleString()} per seat.`;
   const coverImage = t.userVehicle?.images?.[0]?.url;
   // Canonical is derived from the trip's own live route, not the URL's
   // [route] segment — if they ever mismatch (a stale/shared link), the
@@ -38,7 +45,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     openGraph: {
       title: `${titleCase(t.originCity)} → ${titleCase(t.destinationCity)}`,
       description,
-      images: coverImage ? [{ url: coverImage, alt: `${t.userVehicle.make} ${t.userVehicle.model}` }] : undefined,
+      images: coverImage
+        ? [{ url: coverImage, alt: `${t.userVehicle.make} ${t.userVehicle.model}` }]
+        : undefined,
     },
   };
 }
@@ -48,12 +57,15 @@ export default async function TripDetailPage({ params }: PageProps) {
   if (!res?.data) notFound();
 
   const trip = res.data;
-  const departure = new Date(trip.departureAt);
   const price = Number(trip.pricePerSeat).toLocaleString();
   const currency = getCurrencyCode(trip.userVehicle?.country);
   const routeSlug = `${trip.originCity.toLowerCase()}-to-${trip.destinationCity.toLowerCase()}`;
+  const hasRoute = trip.distanceKm != null && trip.durationMinutes != null;
+  const arrival = hasRoute ? estimateArrival(trip.departureAt, trip.durationMinutes!) : null;
+  const pickupStops = trip.stops.filter((s) => s.type === 'PICKUP');
+  const dropoffStops = trip.stops.filter((s) => s.type === 'DROPOFF');
 
-  const whatsappMessage = `Hi, I'm interested in your trip from ${titleCase(trip.originCity)} to ${titleCase(trip.destinationCity)} on ${departure.toLocaleString('en-AE', { dateStyle: 'medium', timeStyle: 'short' })}. Is a seat still available?`;
+  const whatsappMessage = `Hi, I'm interested in your trip from ${titleCase(trip.originCity)} to ${titleCase(trip.destinationCity)} on ${formatTripDateTime(trip.departureAt)}. Is a seat still available?`;
 
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',
@@ -70,7 +82,7 @@ export default async function TripDetailPage({ params }: PageProps) {
       {
         '@type': 'ListItem',
         position: 4,
-        name: departure.toLocaleDateString('en-AE', { day: 'numeric', month: 'short' }),
+        name: formatTripDate(trip.departureAt),
         item: `/carpool/${routeSlug}/${trip.id}`,
       },
     ],
@@ -93,9 +105,7 @@ export default async function TripDetailPage({ params }: PageProps) {
           {titleCase(trip.originCity)} → {titleCase(trip.destinationCity)}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-border-strong" />
-        <span className="truncate font-semibold text-ink">
-          {departure.toLocaleDateString('en-AE', { day: 'numeric', month: 'short' })}
-        </span>
+        <span className="truncate font-semibold text-ink">{formatTripDate(trip.departureAt)}</span>
       </nav>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -110,15 +120,22 @@ export default async function TripDetailPage({ params }: PageProps) {
             </div>
             <p className="mt-2 font-mono text-sm text-text-muted">
               Departs{' '}
-              {departure.toLocaleDateString('en-AE', {
+              {formatTripDate(trip.departureAt, {
                 weekday: 'long',
                 day: 'numeric',
                 month: 'long',
                 year: 'numeric',
               })}
               {' at '}
-              {departure.toLocaleTimeString('en-AE', { hour: 'numeric', minute: '2-digit' })}
+              {formatTripTime(trip.departureAt)}
+              {' (PKT)'}
             </p>
+            {hasRoute && arrival && (
+              <p className="mt-1 font-mono text-xs text-text-muted">
+                {trip.distanceKm} km · ~{formatDuration(trip.durationMinutes!)} drive · estimated arrival{' '}
+                {formatTripTime(arrival.toISOString())} PKT
+              </p>
+            )}
           </div>
 
           {/* Vehicle photos */}
@@ -146,13 +163,61 @@ export default async function TripDetailPage({ params }: PageProps) {
           <Card className="space-y-4">
             <h2 className="text-base font-semibold text-ink">Pickup &amp; drop-off</h2>
             <div>
-              <p className="text-xs font-medium text-text-faint">Pickup point</p>
-              <p className="mt-0.5 text-sm text-slate-700">{trip.pickupPoint}</p>
+              <p className="text-xs font-medium text-text-faint">
+                Pickup point{pickupStops.length > 1 ? 's' : ''}
+              </p>
+              {pickupStops.length > 1 ? (
+                <ol className="mt-1 space-y-1">
+                  {pickupStops.map((stop, i) => (
+                    <li key={stop.id} className="flex gap-2 text-sm text-slate-700">
+                      <span className="text-text-faint">{i + 1}.</span>
+                      {stop.label}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="mt-0.5 text-sm text-slate-700">{trip.pickupPoint}</p>
+              )}
             </div>
-            {trip.dropoffPoint && (
+            {dropoffStops.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-text-faint">Drop-off point</p>
-                <p className="mt-0.5 text-sm text-slate-700">{trip.dropoffPoint}</p>
+                <p className="text-xs font-medium text-text-faint">
+                  Drop-off point{dropoffStops.length > 1 ? 's' : ''}
+                </p>
+                {dropoffStops.length > 1 ? (
+                  <ol className="mt-1 space-y-1">
+                    {dropoffStops.map((stop, i) => (
+                      <li key={stop.id} className="flex gap-2 text-sm text-slate-700">
+                        <span className="text-text-faint">{i + 1}.</span>
+                        {stop.label}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="mt-0.5 text-sm text-slate-700">{trip.dropoffPoint}</p>
+                )}
+              </div>
+            )}
+            {(pickupStops.length > 1 || dropoffStops.length > 1) && (
+              <p className="text-xs text-text-faint">
+                Every rider travels the full route — these are just alternate meeting points at each end.
+              </p>
+            )}
+            {hasRoute && arrival && (
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border-subtle pt-4 text-sm text-slate-700">
+                <span className="inline-flex items-center gap-1.5">
+                  <RouteIcon className="h-4 w-4 text-text-faint" />
+                  {trip.distanceKm} km
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="h-4 w-4 text-text-faint" />
+                  ~{formatDuration(trip.durationMinutes!)} drive
+                </span>
+                <span className="text-xs text-text-muted">
+                  Estimated to reach drop-off around{' '}
+                  <span className="font-semibold text-ink">{formatTripTime(arrival.toISOString())} PKT</span>
+                  {' · based on typical drive time, not live traffic'}
+                </span>
               </div>
             )}
           </Card>

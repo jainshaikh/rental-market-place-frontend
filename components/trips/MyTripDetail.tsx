@@ -10,6 +10,7 @@ import { useTripInquiryInbox, useUpdateTripInquiryStatus } from '../../hooks/use
 import { StatusBadge } from '../common/StatusBadge';
 import { Button, Card, ConfirmDialog, ErrorState, Modal, Textarea } from '../ui';
 import { getCurrencyCode } from '../../lib/utils/currency';
+import { formatTripDateTime } from '../../lib/utils/datetime';
 
 interface MyTripDetailProps {
   backHref: string; // e.g. '/dashboard/trips'
@@ -80,10 +81,7 @@ export function MyTripDetail({ backHref, vehicleBasePath }: MyTripDetailProps) {
               <StatusBadge status={trip.status} />
             </div>
             <p className="mt-1.5 font-mono text-[13px] text-text-muted">
-              {new Date(trip.departureAt).toLocaleString('en-PK', {
-                dateStyle: 'full',
-                timeStyle: 'short',
-              })}
+              {formatTripDateTime(trip.departureAt, { dateStyle: 'full', timeStyle: 'short' })} PKT
             </p>
             {trip.status === 'CANCELLED' && trip.cancelReason && (
               <p className="text-ink-soft mt-2.5 inline-block rounded-control border border-border-subtle bg-page px-3 py-2 text-xs">

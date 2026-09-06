@@ -32,7 +32,8 @@ function parseRoute(route: string): ParsedRoute | null {
   const decoded = decodeURIComponent(route).toLowerCase();
   if (!decoded) return null;
   const parts = decoded.split('-to-');
-  if (parts.length === 2 && parts[0] && parts[1]) return { origin: parts[0], destination: parts[1] };
+  if (parts.length === 2 && parts[0] && parts[1])
+    return { origin: parts[0], destination: parts[1] };
   if (parts.length === 1 && parts[0]) return { origin: parts[0], destination: null };
   return null;
 }
@@ -171,7 +172,9 @@ export default async function CarpoolRoutePage({ params, searchParams }: PagePro
           )}
         </div>
         <h1 className="text-[26px] font-bold tracking-tight text-ink">
-          {destinationName ? `${originName} to ${destinationName} Carpool Rides` : `Carpool Rides from ${originName}`}
+          {destinationName
+            ? `${originName} to ${destinationName} Carpool Rides`
+            : `Carpool Rides from ${originName}`}
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-text-muted">
           {destinationName
@@ -203,7 +206,9 @@ export default async function CarpoolRoutePage({ params, searchParams }: PagePro
           href="/dashboard/trips/new"
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:underline"
         >
-          {destinationName ? 'Driving this route? Post your trip' : `Driving from ${originName}? Post your trip`}
+          {destinationName
+            ? 'Driving this route? Post your trip'
+            : `Driving from ${originName}? Post your trip`}
           <ChevronRight className="h-4 w-4" />
         </Link>
       </div>

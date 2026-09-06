@@ -11,6 +11,7 @@ import { useCreateTripInquiry } from '../../../../../../hooks/useTripInquiries';
 import { useQuery } from '@tanstack/react-query';
 import { tripsApi } from '../../../../../../lib/api/trips.api';
 import { getCurrencyCode } from '../../../../../../lib/utils/currency';
+import { formatTripDateTime } from '../../../../../../lib/utils/datetime';
 import {
   createTripInquirySchema,
   type CreateTripInquiryFormValues,
@@ -201,7 +202,7 @@ export default function TripInquirePage() {
                 {titleCase(trip.originCity)} → {titleCase(trip.destinationCity)}
               </p>
               <p className="mt-1 text-sm text-text-muted">
-                {new Date(trip.departureAt).toLocaleString('en-AE', { dateStyle: 'medium', timeStyle: 'short' })}
+                {formatTripDateTime(trip.departureAt)} PKT
               </p>
             </div>
 

@@ -4,24 +4,29 @@ import Link from 'next/link';
 import { ArrowRight, Users, Clock } from 'lucide-react';
 import type { TripRouteGroup } from '../../lib/api/trips.api';
 import { getCurrencyCode } from '../../lib/utils/currency';
+import { TRIP_TIMEZONE, formatTripDate, formatTripTime } from '../../lib/utils/datetime';
 
 function titleCase(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// "Today"/"Tomorrow" as calendar days in Pakistan time — not the viewer's own
+// device timezone, which would mislabel a trip for anyone browsing from
+// outside Asia/Karachi.
+function karachiDateKey(date: Date): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: TRIP_TIMEZONE }).format(date);
 }
 
 function formatNextDeparture(iso: string | null): string | null {
   if (!iso) return null;
   const date = new Date(iso);
   const now = new Date();
-  const isToday = date.toDateString() === now.toDateString();
-  const tomorrow = new Date(now);
-  tomorrow.setDate(now.getDate() + 1);
-  const isTomorrow = date.toDateString() === tomorrow.toDateString();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-  const time = date.toLocaleTimeString('en-PK', { hour: 'numeric', minute: '2-digit' });
-  if (isToday) return `Today, ${time}`;
-  if (isTomorrow) return `Tomorrow, ${time}`;
-  return date.toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short' }) + `, ${time}`;
+  const time = formatTripTime(iso);
+  if (karachiDateKey(date) === karachiDateKey(now)) return `Today, ${time}`;
+  if (karachiDateKey(date) === karachiDateKey(tomorrow)) return `Tomorrow, ${time}`;
+  return `${formatTripDate(iso, { weekday: 'short', day: 'numeric', month: 'short' })}, ${time}`;
 }
 
 // A route-level summary card — deliberately carries no single trip's own

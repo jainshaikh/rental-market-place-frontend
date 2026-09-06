@@ -21,16 +21,32 @@ export interface TripVehicle {
 
 // ── Public shapes ────────────────────────────────────────────────────────────
 
+export interface TripStop {
+  id: string;
+  type: 'PICKUP' | 'DROPOFF';
+  label: string;
+  lat: number | null;
+  lng: number | null;
+  sortOrder: number;
+}
+
 export interface TripCard {
   id: string;
   originCity: string;
   destinationCity: string;
+  // Legacy primary pickup/dropoff — mirrors the first pickup stop and last
+  // dropoff stop in `stops`. Every rider still travels the full route
+  // (first stop → last stop) at the flat pricePerSeat; the other stops are
+  // just alternate meeting points at each end, not separately bookable legs.
   pickupPoint: string;
   pickupLat: number | null;
   pickupLng: number | null;
   dropoffPoint: string | null;
   dropoffLat: number | null;
   dropoffLng: number | null;
+  stops: TripStop[];
+  distanceKm: number | null;
+  durationMinutes: number | null;
   departureAt: string;
   availableSeats: number;
   pricePerSeat: string | number;
@@ -85,16 +101,21 @@ export interface TripRouteGroup {
 
 // ── Poster shapes ─────────────────────────────────────────────────────────
 
+export interface CreateTripStopPayload {
+  label: string;
+  lat?: number;
+  lng?: number;
+}
+
 export interface CreateTripPayload {
   userVehicleId: string;
   originCity: string;
   destinationCity: string;
-  pickupPoint: string;
-  pickupLat?: number;
-  pickupLng?: number;
-  dropoffPoint?: string;
-  dropoffLat?: number;
-  dropoffLng?: number;
+  // Ordered pickup points (at least one) and drop-off points (optional) —
+  // A → B → C → D → E. Every rider still travels the whole route at the
+  // flat pricePerSeat; these are alternate meeting points, not bookable legs.
+  pickupStops: CreateTripStopPayload[];
+  dropoffStops: CreateTripStopPayload[];
   departureAt: string;
   availableSeats: number;
   pricePerSeat: number;

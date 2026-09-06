@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useAdminTripDetail, useSuspendTrip, useReactivateTrip } from '../../../../../hooks/useAdmin';
 import { StatusBadge } from '../../../../../components/common/StatusBadge';
 import { getCurrencyCode } from '../../../../../lib/utils/currency';
+import { formatTripDateTime } from '../../../../../lib/utils/datetime';
 
 export default function AdminTripDetailPage() {
   const params = useParams();
@@ -55,7 +56,7 @@ export default function AdminTripDetailPage() {
               <StatusBadge status={trip.status} />
             </div>
             <p className="text-sm text-slate-500 mt-1">
-              Departs {new Date(trip.departureAt).toLocaleString('en-AE', { dateStyle: 'full', timeStyle: 'short' })}
+              Departs {formatTripDateTime(trip.departureAt, { dateStyle: 'full', timeStyle: 'short' })} PKT
             </p>
             {trip.cancelReason && (
               <p className="text-xs text-slate-600 bg-slate-100 rounded-lg px-3 py-2 mt-3 inline-block">

@@ -2,13 +2,21 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import {
+  useForm,
+  useFieldArray,
+  type Control,
+  type FieldErrors,
+  type UseFormWatch,
+  type UseFormSetValue,
+} from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CarFront, Plus } from 'lucide-react';
+import { CarFront, Plus, X } from 'lucide-react';
 import { useCreateTrip } from '../../hooks/useTrips';
 import { useMyApprovedUserVehicles } from '../../hooks/useUserVehicles';
 import { tripSchema, type TripFormValues } from '../../lib/validations/trip.schema';
 import { getCurrencyCode } from '../../lib/utils/currency';
+import { karachiLocalToISOString } from '../../lib/utils/datetime';
 import { Button, Card, EmptyState, Input, Select, Textarea } from '../ui';
 import { MapLocationField } from '../maps/MapLocationField';
 
@@ -29,6 +37,83 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+interface StopListFieldProps {
+  name: 'pickupStops' | 'dropoffStops';
+  control: Control<TripFormValues>;
+  watch: UseFormWatch<TripFormValues>;
+  setValue: UseFormSetValue<TripFormValues>;
+  errors: FieldErrors<TripFormValues>;
+  label: string;
+  addLabel: string;
+  placeholder: string;
+  required?: boolean;
+  minRows?: number;
+}
+
+// A rider can be picked up (or dropped off) at any of these points — every
+// rider still travels the whole route (first stop → last stop) at the flat
+// price, so this is just an ordered list of alternate meeting spots at one
+// end of the trip, not a per-segment booking chain (A → B → C → D → E).
+function StopListField({
+  name,
+  control,
+  watch,
+  setValue,
+  errors,
+  label,
+  addLabel,
+  placeholder,
+  required,
+  minRows = 0,
+}: StopListFieldProps) {
+  const { fields, append, remove } = useFieldArray({ control, name });
+  const fieldErrors = errors[name];
+
+  return (
+    <div className="space-y-3">
+      {fields.map((field, index) => (
+        <div key={field.id} className="flex items-start gap-2">
+          <MapLocationField
+            className="flex-1"
+            label={index === 0 ? label : `${label} ${index + 1}`}
+            required={required && index === 0}
+            addressValue={watch(`${name}.${index}.label`) ?? ''}
+            onAddressChange={(text) =>
+              setValue(`${name}.${index}.label`, text, { shouldValidate: true, shouldDirty: true })
+            }
+            lat={watch(`${name}.${index}.lat`)}
+            lng={watch(`${name}.${index}.lng`)}
+            onLocationChange={(lat, lng) => {
+              setValue(`${name}.${index}.lat`, lat, { shouldDirty: true });
+              setValue(`${name}.${index}.lng`, lng, { shouldDirty: true });
+            }}
+            placeholder={placeholder}
+            error={Array.isArray(fieldErrors) ? fieldErrors[index]?.label?.message : undefined}
+          />
+          {fields.length > minRows && (
+            <button
+              type="button"
+              onClick={() => remove(index)}
+              aria-label={`Remove ${label.toLowerCase()} ${index + 1}`}
+              className="mt-8 flex-shrink-0 rounded-control p-2 text-text-faint transition-colors hover:bg-status-red-bg hover:text-red-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => append({ label: '' })}
+        className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 transition-colors hover:text-brand-800"
+      >
+        <Plus className="h-3.5 w-3.5" />
+        {addLabel}
+      </button>
+    </div>
+  );
+}
+
 export function TripForm({ cancelHref, detailBasePath, addVehicleHref }: TripFormProps) {
   const router = useRouter();
   const createTrip = useCreateTrip();
@@ -39,28 +124,12 @@ export function TripForm({ cancelHref, detailBasePath, addVehicleHref }: TripFor
     handleSubmit,
     watch,
     setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<TripFormValues>({
     resolver: zodResolver(tripSchema),
-    defaultValues: { availableSeats: 3 },
+    defaultValues: { availableSeats: 3, pickupStops: [{ label: '' }], dropoffStops: [] },
   });
-
-  // Three ways to fill these in: search + pick a Places suggestion, click/drag
-  // a pin directly on the map (reverse-geocoded to fill the text automatically),
-  // or just type a free-text landmark Places doesn't know about — coordinates
-  // are best-effort, never required for submission.
-  const handlePickupAddressChange = (text: string) =>
-    setValue('pickupPoint', text, { shouldValidate: true, shouldDirty: true });
-  const handlePickupLocationChange = (lat: number, lng: number) => {
-    setValue('pickupLat', lat, { shouldDirty: true });
-    setValue('pickupLng', lng, { shouldDirty: true });
-  };
-  const handleDropoffAddressChange = (text: string) =>
-    setValue('dropoffPoint', text, { shouldValidate: true, shouldDirty: true });
-  const handleDropoffLocationChange = (lat: number, lng: number) => {
-    setValue('dropoffLat', lat, { shouldDirty: true });
-    setValue('dropoffLng', lng, { shouldDirty: true });
-  };
 
   // A vehicle owner's registered vehicles could in principle span markets, so
   // the currency follows whichever vehicle is actually selected, not a fixed default.
@@ -71,9 +140,11 @@ export function TripForm({ cancelHref, detailBasePath, addVehicleHref }: TripFor
   const onSubmit = async (values: TripFormValues) => {
     const result = await createTrip.mutateAsync({
       ...values,
-      dropoffPoint: values.dropoffPoint || undefined,
       notes: values.notes || undefined,
-      departureAt: new Date(values.departureAt).toISOString(),
+      // The datetime-local input has no timezone of its own — every trip runs
+      // in Pakistan, so its value is always interpreted as Asia/Karachi time
+      // regardless of the poster's own device timezone.
+      departureAt: karachiLocalToISOString(values.departureAt),
     });
 
     router.push(`${detailBasePath}/${result.id}`);
@@ -156,25 +227,30 @@ export function TripForm({ cancelHref, detailBasePath, addVehicleHref }: TripFor
             />
           </div>
 
-          <MapLocationField
+          <StopListField
+            name="pickupStops"
+            control={control}
+            watch={watch}
+            setValue={setValue}
+            errors={errors}
             label="Pickup point"
-            required
-            addressValue={watch('pickupPoint') ?? ''}
-            onAddressChange={handlePickupAddressChange}
-            lat={watch('pickupLat')}
-            lng={watch('pickupLng')}
-            onLocationChange={handlePickupLocationChange}
+            addLabel="Add another pickup point"
             placeholder="e.g. Liaquatabad Chowrangi, near Total Petrol Pump"
-            error={errors.pickupPoint?.message}
+            required
+            minRows={1}
           />
+          {errors.pickupStops?.message && (
+            <p className="text-[13px] text-red-700">{errors.pickupStops.message}</p>
+          )}
 
-          <MapLocationField
+          <StopListField
+            name="dropoffStops"
+            control={control}
+            watch={watch}
+            setValue={setValue}
+            errors={errors}
             label="Drop-off point"
-            addressValue={watch('dropoffPoint') ?? ''}
-            onAddressChange={handleDropoffAddressChange}
-            lat={watch('dropoffLat')}
-            lng={watch('dropoffLng')}
-            onLocationChange={handleDropoffLocationChange}
+            addLabel="Add a drop-off point"
             placeholder="e.g. Karachi Cantt Station"
           />
 

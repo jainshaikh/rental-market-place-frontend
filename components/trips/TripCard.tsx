@@ -2,10 +2,17 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Car, Image as ImageIcon, MapPin } from 'lucide-react';
+import { ArrowRight, Car, Clock, Image as ImageIcon, MapPin, Route } from 'lucide-react';
 import { cn } from '../../lib/utils/cn';
 import type { TripCard as TripCardType } from '../../lib/api/trips.api';
 import { getCurrencyCode } from '../../lib/utils/currency';
+import {
+  formatDuration,
+  formatTripDate,
+  formatTripDateTime,
+  formatTripTime,
+  estimateArrival,
+} from '../../lib/utils/datetime';
 import { WhatsAppButton } from '../ui';
 
 function titleCase(s: string): string {
@@ -35,11 +42,15 @@ interface TripCardProps {
 export function TripCard({ trip, className, href }: TripCardProps) {
   const price = Number(trip.pricePerSeat).toLocaleString();
   const currency = getCurrencyCode(trip.userVehicle?.country);
-  const departure = new Date(trip.departureAt);
   const poster = trip.userVehicle.images[0];
+  const pickupCount = trip.stops.filter((s) => s.type === 'PICKUP').length;
+  const dropoffCount = trip.stops.filter((s) => s.type === 'DROPOFF').length;
+  const hasMultipleStops = pickupCount > 1 || dropoffCount > 1;
+  const hasRoute = trip.distanceKm != null && trip.durationMinutes != null;
+  const arrival = hasRoute ? estimateArrival(trip.departureAt, trip.durationMinutes!) : null;
   const whatsappMessage = `Hi, I'm interested in your trip from ${titleCase(trip.originCity)} to ${titleCase(
     trip.destinationCity,
-  )} on ${departure.toLocaleString('en-PK', { dateStyle: 'medium', timeStyle: 'short' })}. Is a seat still available?`;
+  )} on ${formatTripDateTime(trip.departureAt)}. Is a seat still available?`;
   const targetHref =
     href ?? `/carpool/${trip.originCity.toLowerCase()}-to-${trip.destinationCity.toLowerCase()}`;
 
@@ -82,13 +93,10 @@ export function TripCard({ trip, className, href }: TripCardProps) {
           </span>
         </div>
         <p className="mt-1.5 font-mono text-xs text-text-muted">
-          {departure.toLocaleDateString('en-PK', {
-            weekday: 'short',
-            day: 'numeric',
-            month: 'short',
-          })}
+          {formatTripDate(trip.departureAt, { weekday: 'short', day: 'numeric', month: 'short' })}
           {' · '}
-          {departure.toLocaleTimeString('en-PK', { hour: 'numeric', minute: '2-digit' })}
+          {formatTripTime(trip.departureAt)}
+          {arrival && <> · arrives ~{formatTripTime(arrival.toISOString())}</>}
         </p>
 
         {/* Seats pill sits BELOW the route, not absolutely positioned over it —
@@ -127,6 +135,23 @@ export function TripCard({ trip, className, href }: TripCardProps) {
             {trip.dropoffPoint ? ` → ${trip.dropoffPoint}` : ''}
           </span>
         </p>
+
+        {hasMultipleStops && (
+          <p className="mt-1 text-[11px] text-text-faint">
+            {pickupCount > 1 ? `${pickupCount} pickup points` : null}
+            {pickupCount > 1 && dropoffCount > 1 ? ' · ' : null}
+            {dropoffCount > 1 ? `${dropoffCount} drop-off points` : null}
+          </p>
+        )}
+
+        {hasRoute && (
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-text-muted">
+            <Route className="h-3.5 w-3.5 flex-shrink-0 text-text-faint" />
+            <span>{trip.distanceKm} km</span>
+            <Clock className="ml-1.5 h-3.5 w-3.5 flex-shrink-0 text-text-faint" />
+            <span>~{formatDuration(trip.durationMinutes!)} drive</span>
+          </p>
+        )}
 
         {/* Poster + WhatsApp */}
         <div className="mt-3 flex items-center justify-between gap-3 border-t border-border-subtle pt-3">
