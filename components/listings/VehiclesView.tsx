@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { SearchX, SlidersHorizontal } from 'lucide-react';
+import { Heart, SearchX, SlidersHorizontal } from 'lucide-react';
 import { VehicleCard, VehicleCardSkeleton } from './VehicleCard';
 import {
   listingsApi,
@@ -15,6 +15,8 @@ import { Button, Card, EmptyState, Input, Pagination, PillToggle, Select } from 
 import { LocationSearch } from '../maps/LocationSearch';
 import { ResultsMap } from '../maps/ResultsMap';
 import { DEFAULT_NEARBY_RADIUS_KM, clearUserLocation, type UserLocation } from '../../lib/utils/userLocation';
+import { useAuth } from '../../hooks/useAuth';
+import { useSavedVehicles } from '../../hooks/useSavedVehicles';
 
 const TRANSMISSION_OPTS = [
   { value: '', label: 'Any' },
@@ -65,7 +67,10 @@ export function VehiclesView({ initialData, makes, cities, initialLocation }: Ve
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { isAuthenticated } = useAuth();
   const [showFilters, setShowFilters] = useState(false);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [favoritesPage, setFavoritesPage] = useState(1);
   const [location, setLocation] = useState<UserLocation | null>(initialLocation ?? null);
   // LocationSearch keeps its own internal "current" display state, seeded
   // once from the cookie on mount — it has no way to know when the parent
@@ -109,12 +114,25 @@ export function VehiclesView({ initialData, makes, cities, initialLocation }: Ve
     initialData: matchesInitialLocation ? initialData ?? undefined : undefined,
     staleTime: 60_000,
     placeholderData: (prev) => prev,
+    enabled: !favoritesOnly,
   });
 
-  const vehicles = data?.data ?? [];
-  const meta = data?.meta;
+  const favorites = useSavedVehicles(favoritesPage, 12);
+
+  // getSavedVehicles doesn't compute a saved vehicle's current booking status
+  // (that's specific to browse/search) — default to AVAILABLE so it satisfies
+  // the shared ListingVehicleCard shape <VehicleCard> renders either way.
+  const vehicles = favoritesOnly
+    ? (favorites.data?.data.map((entry) => ({
+        ...entry.vehicle,
+        availability: 'AVAILABLE' as const,
+        bookedUntil: null,
+      })) ?? [])
+    : (data?.data ?? []);
+  const meta = favoritesOnly ? favorites.data?.meta : data?.meta;
   const totalPages = meta?.totalPages ?? 1;
-  const currentPage = filters.page ?? 1;
+  const currentPage = favoritesOnly ? favoritesPage : (filters.page ?? 1);
+  const isLoadingResults = favoritesOnly ? favorites.isFetching : isFetching;
   const mapPins = vehicles
     .filter((v) => v.showroom?.mapLat != null && v.showroom?.mapLng != null)
     .map((v) => ({
@@ -198,8 +216,23 @@ export function VehiclesView({ initialData, makes, cities, initialLocation }: Ve
               {hasActiveFilters && <span className="h-1.5 w-1.5 rounded-full bg-brand-600" />}
             </Button>
 
+            {isAuthenticated && (
+              <PillToggle
+                active={favoritesOnly}
+                onClick={() => {
+                  setFavoritesOnly((v) => !v);
+                  setFavoritesPage(1);
+                }}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Heart className={cn('h-3.5 w-3.5', favoritesOnly && 'fill-current')} />
+                  My favorites
+                </span>
+              </PillToggle>
+            )}
+
             <p className="text-sm text-text-muted">
-              {isFetching ? (
+              {isLoadingResults ? (
                 'Loading…'
               ) : meta ? (
                 <>
@@ -245,7 +278,7 @@ export function VehiclesView({ initialData, makes, cities, initialLocation }: Ve
         )}
 
         {/* Grid */}
-        {isFetching && vehicles.length === 0 ? (
+        {isLoadingResults && vehicles.length === 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <VehicleCardSkeleton key={i} />
@@ -253,17 +286,27 @@ export function VehiclesView({ initialData, makes, cities, initialLocation }: Ve
           </div>
         ) : vehicles.length === 0 ? (
           <EmptyState
-            icon={SearchX}
-            title="Nothing matches those filters"
-            description="Try widening the price range or removing a filter."
-            action={hasActiveFilters ? { label: 'Clear all filters', onClick: clearFilters, variant: 'secondary' } : undefined}
+            icon={favoritesOnly ? Heart : SearchX}
+            title={favoritesOnly ? 'No favorites yet' : 'Nothing matches those filters'}
+            description={
+              favoritesOnly
+                ? 'Tap the heart on a vehicle to save it here.'
+                : 'Try widening the price range or removing a filter.'
+            }
+            action={
+              favoritesOnly
+                ? undefined
+                : hasActiveFilters
+                  ? { label: 'Clear all filters', onClick: clearFilters, variant: 'secondary' }
+                  : undefined
+            }
           />
         ) : (
           <>
             <div
               className={cn(
                 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3',
-                isFetching && 'pointer-events-none opacity-70 transition-opacity',
+                isLoadingResults && 'pointer-events-none opacity-70 transition-opacity',
               )}
             >
               {vehicles.map((vehicle) => (
@@ -274,7 +317,7 @@ export function VehiclesView({ initialData, makes, cities, initialLocation }: Ve
             <Pagination
               page={currentPage}
               totalPages={totalPages}
-              onPageChange={(p) => updateFilter('page', p)}
+              onPageChange={(p) => (favoritesOnly ? setFavoritesPage(p) : updateFilter('page', p))}
               className="mt-7"
             />
           </>

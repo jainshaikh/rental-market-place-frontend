@@ -27,7 +27,7 @@ const STATUS_LABEL: Partial<Record<TripInquiry['status'], string>> = {
 export function MyTripInquiriesList() {
   const router = useRouter();
   const [page, setPage] = useState(1);
-  const [cancelId, setCancelId] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<TripInquiry | null>(null);
   const { data, isFetching } = useMyTripInquiries(page);
   const updateStatus = useUpdateTripInquiryStatus();
 
@@ -62,7 +62,7 @@ export function MyTripInquiriesList() {
       ) : (
         <div className={cn('space-y-3', isFetching && 'opacity-70 transition-opacity')}>
           {inquiries.map((inquiry) => {
-            const canCancel = inquiry.status === 'PENDING';
+            const canCancel = inquiry.status === 'PENDING' || inquiry.status === 'ACCEPTED';
             return (
               <Card
                 key={inquiry.id}
@@ -106,10 +106,10 @@ export function MyTripInquiriesList() {
                 {canCancel && (
                   <div className="mt-3">
                     <button
-                      onClick={() => setCancelId(inquiry.id)}
+                      onClick={() => setCancelTarget(inquiry)}
                       className="text-xs font-medium text-text-faint transition-colors hover:text-red-600"
                     >
-                      Cancel request
+                      {inquiry.status === 'ACCEPTED' ? 'Cancel my seat' : 'Cancel request'}
                     </button>
                   </div>
                 )}
@@ -129,17 +129,21 @@ export function MyTripInquiriesList() {
       )}
 
       <ConfirmDialog
-        open={!!cancelId}
-        onOpenChange={(open) => !open && setCancelId(null)}
-        title="Cancel this request?"
-        description="The driver will no longer see this as pending. You can always send a new request."
+        open={!!cancelTarget}
+        onOpenChange={(open) => !open && setCancelTarget(null)}
+        title={cancelTarget?.status === 'ACCEPTED' ? 'Cancel your confirmed seat?' : 'Cancel this request?'}
+        description={
+          cancelTarget?.status === 'ACCEPTED'
+            ? "You already have a confirmed seat on this trip — cancelling frees it up for someone else, and the driver will be notified. This can't be undone."
+            : 'The driver will no longer see this as pending. You can always send a new request.'
+        }
         confirmLabel="Yes, cancel"
         cancelLabel="Keep it"
         loading={updateStatus.isPending}
         onConfirm={async () => {
-          if (!cancelId) return;
-          await updateStatus.mutateAsync({ id: cancelId, data: { newStatus: 'CANCELLED' } });
-          setCancelId(null);
+          if (!cancelTarget) return;
+          await updateStatus.mutateAsync({ id: cancelTarget.id, data: { newStatus: 'CANCELLED' } });
+          setCancelTarget(null);
         }}
       />
     </div>

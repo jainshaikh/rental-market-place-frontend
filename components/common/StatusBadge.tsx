@@ -18,6 +18,7 @@ const TONE_BY_STATUS: Record<string, StatusTone> = {
   contacted: 'violet',
   accepted: 'emerald',
   cancelled: 'slate',
+  expired: 'slate',
   completed: 'teal',
 };
 
@@ -44,6 +45,7 @@ const LABEL_MAP: Record<string, string> = {
   CONTACTED: 'Contacted',
   ACCEPTED: 'Accepted',
   CANCELLED: 'Cancelled',
+  EXPIRED: 'Expired',
   COMPLETED: 'Completed',
 };
 

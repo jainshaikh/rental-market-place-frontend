@@ -1,5 +1,17 @@
 import apiClient from './client';
-import type { ApiResponse, User, SavedVehicle, PaginationMeta } from '../../types/api.types';
+import type { ApiResponse, User, PaginationMeta } from '../../types/api.types';
+import type { ListingVehicleCard } from './listings.api';
+
+export interface SavedVehicle {
+  id: string;
+  vehicleId: string;
+  createdAt: string;
+  // getSavedVehicles reuses the backend's shared CARD_SELECT, so this matches
+  // ListingVehicleCard exactly except for the two fields only computed by the
+  // listings endpoints themselves (a saved vehicle's own current booking
+  // status isn't looked up here).
+  vehicle: Omit<ListingVehicleCard, 'availability' | 'bookedUntil'>;
+}
 
 export const usersApi = {
   getMe: async () => {

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   useAdminUserVehicles,
-  useApproveUserVehicle,
   useRejectUserVehicle,
   useSuspendUserVehicle,
   useReactivateUserVehicle,
@@ -38,7 +37,6 @@ export default function AdminUserVehiclesPage() {
   const [rejectTarget, setRejectTarget] = useState<AdminUserVehicle | null>(null);
 
   const { data, isFetching } = useAdminUserVehicles(page, statusFilter || undefined);
-  const approve = useApproveUserVehicle();
   const reject = useRejectUserVehicle();
   const suspend = useSuspendUserVehicle();
   const reactivate = useReactivateUserVehicle();
@@ -117,12 +115,13 @@ export default function AdminUserVehiclesPage() {
                 <div className="flex justify-end gap-2">
                   {vehicle.status === 'PENDING_REVIEW' && (
                     <>
+                      {/* No blind-approve here — approving requires opening the
+                          detail page and reviewing the identity documents first. */}
                       <Button
                         size="sm"
-                        loading={approve.isPending}
-                        onClick={() => approve.mutate(vehicle.id)}
+                        onClick={() => router.push(`/admin/user-vehicles/${vehicle.id}`)}
                       >
-                        Approve
+                        Review
                       </Button>
                       <Button
                         size="sm"

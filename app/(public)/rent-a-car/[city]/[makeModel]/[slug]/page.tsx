@@ -22,6 +22,7 @@ import { ReviewsList } from '../../../../../../components/common/ReviewsList';
 import { InquiryCta } from '../../../../../../components/vehicles/InquiryCta';
 import { VehicleImageGallery } from '../../../../../../components/vehicles/VehicleImageGallery';
 import { TrackEvent } from '../../../../../../components/common/TrackEvent';
+import { SaveButton } from '../../../../../../components/listings/SaveButton';
 
 interface PageProps {
   params: { city: string; makeModel: string; slug: string };
@@ -187,9 +188,12 @@ export default async function VehicleDetailPage({ params }: PageProps) {
 
           {/* Title + quick specs */}
           <div>
-            <h1 className="text-[26px] font-bold leading-tight tracking-tight text-ink">
-              {vehicle.title}
-            </h1>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="text-[26px] font-bold leading-tight tracking-tight text-ink">
+                {vehicle.title}
+              </h1>
+              <SaveButton vehicleId={vehicle.id} className="flex-shrink-0 border border-border-subtle" />
+            </div>
             <div className="mt-3.5 flex flex-wrap items-center gap-3.5 text-[13px] text-text-muted">
               <RatingSummaryBadge subjectType="VEHICLE" subjectId={vehicle.id} size="sm" />
               <span className="flex items-center gap-1.5">

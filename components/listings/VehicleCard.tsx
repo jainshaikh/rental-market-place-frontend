@@ -8,6 +8,7 @@ import type { ListingVehicleCard } from '../../lib/api/listings.api';
 import { getCurrencyCode } from '../../lib/utils/currency';
 import { getVehicleUrl } from '../../lib/utils/vehicleUrl';
 import { Avatar } from '../ui';
+import { SaveButton } from './SaveButton';
 
 interface VehicleCardProps {
   vehicle: ListingVehicleCard;
@@ -53,6 +54,8 @@ export function VehicleCard({ vehicle, className }: VehicleCardProps) {
           {currency} {price}
           <span className="font-sans font-normal opacity-75">/day</span>
         </div>
+
+        <SaveButton vehicleId={vehicle.id} size="sm" className="absolute right-2.5 top-2.5" />
       </div>
 
       {/* Info */}

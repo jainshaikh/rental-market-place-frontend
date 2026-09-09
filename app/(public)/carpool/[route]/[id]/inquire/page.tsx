@@ -16,7 +16,7 @@ import {
   createTripInquirySchema,
   type CreateTripInquiryFormValues,
 } from '../../../../../../lib/validations/trip-inquiry.schema';
-import { Button, Card, Input, Textarea } from '../../../../../../components/ui';
+import { Button, Card, Input, PillToggle, Textarea } from '../../../../../../components/ui';
 
 function titleCase(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -28,6 +28,9 @@ export default function TripInquirePage() {
   const { user, isLoading: authLoading } = useAuth();
   const createInquiry = useCreateTripInquiry();
   const [submitted, setSubmitted] = useState(false);
+  const [selectedPickupStopId, setSelectedPickupStopId] = useState<string | null>(null);
+  const [selectedDropoffStopId, setSelectedDropoffStopId] = useState<string | null>(null);
+  const [useCustomPickup, setUseCustomPickup] = useState(false);
 
   const { data: trip, isLoading: tripLoading } = useQuery({
     queryKey: ['trip', params.id],
@@ -46,6 +49,8 @@ export default function TripInquirePage() {
   });
 
   const requestedSeats = watch('requestedSeats') ?? 1;
+  const pickupStops = trip?.stops.filter((s) => s.type === 'PICKUP') ?? [];
+  const dropoffStops = trip?.stops.filter((s) => s.type === 'DROPOFF') ?? [];
 
   if (!authLoading && !user) {
     router.replace(`/login?redirect=/carpool/${params.route}/${params.id}/inquire`);
@@ -75,10 +80,23 @@ export default function TripInquirePage() {
   const routeSlug = `${trip.originCity.toLowerCase()}-to-${trip.destinationCity.toLowerCase()}`;
 
   const onSubmit = async (values: CreateTripInquiryFormValues) => {
+    const pickupLabel = pickupStops.find((s) => s.id === selectedPickupStopId)?.label;
+    const dropoffLabel = dropoffStops.find((s) => s.id === selectedDropoffStopId)?.label;
+    const pickupText = pickupLabel || (values.pickupNote || '').trim() || undefined;
+
+    let pickupNote: string | undefined;
+    if (pickupText && dropoffLabel) {
+      pickupNote = `Pickup: ${pickupText} · Drop-off: ${dropoffLabel}`;
+    } else if (pickupText) {
+      pickupNote = pickupText;
+    } else if (dropoffLabel) {
+      pickupNote = `Drop-off: ${dropoffLabel}`;
+    }
+
     const result = await createInquiry.mutateAsync({
       tripId: values.tripId,
       requestedSeats: values.requestedSeats,
-      pickupNote: values.pickupNote || undefined,
+      pickupNote,
       message: values.message || undefined,
     });
     if (result) setSubmitted(true);
@@ -167,12 +185,67 @@ export default function TripInquirePage() {
               {errors.requestedSeats && <p className="mt-1.5 text-xs text-red-700">{errors.requestedSeats.message}</p>}
             </div>
 
-            <Input
-              label="Pickup note"
-              helper="Optional — e.g. a landmark near the pickup point"
-              placeholder="e.g. Near the mosque, not the main gate"
-              {...register('pickupNote')}
-            />
+            {pickupStops.length > 0 ? (
+              <div>
+                <label className="mb-2 block text-[13px] font-semibold text-slate-700">Pickup point</label>
+                <div className="flex flex-wrap gap-2">
+                  {pickupStops.map((stop) => (
+                    <PillToggle
+                      key={stop.id}
+                      active={!useCustomPickup && selectedPickupStopId === stop.id}
+                      onClick={() => {
+                        setUseCustomPickup(false);
+                        setSelectedPickupStopId(stop.id);
+                      }}
+                    >
+                      {stop.label}
+                    </PillToggle>
+                  ))}
+                  <PillToggle
+                    active={useCustomPickup}
+                    onClick={() => {
+                      setUseCustomPickup(true);
+                      setSelectedPickupStopId(null);
+                    }}
+                  >
+                    Other
+                  </PillToggle>
+                </div>
+                {useCustomPickup ? (
+                  <Input
+                    className="mt-2"
+                    placeholder="Describe your pickup point"
+                    {...register('pickupNote')}
+                  />
+                ) : null}
+              </div>
+            ) : (
+              <Input
+                label="Pickup note"
+                helper="Optional — e.g. a landmark near the pickup point"
+                placeholder="e.g. Near the mosque, not the main gate"
+                {...register('pickupNote')}
+              />
+            )}
+
+            {dropoffStops.length > 0 ? (
+              <div>
+                <label className="mb-2 block text-[13px] font-semibold text-slate-700">Drop-off point</label>
+                <div className="flex flex-wrap gap-2">
+                  {dropoffStops.map((stop) => (
+                    <PillToggle
+                      key={stop.id}
+                      active={selectedDropoffStopId === stop.id}
+                      onClick={() =>
+                        setSelectedDropoffStopId((current) => (current === stop.id ? null : stop.id))
+                      }
+                    >
+                      {stop.label}
+                    </PillToggle>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <Textarea
               label="Message"

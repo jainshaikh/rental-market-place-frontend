@@ -11,7 +11,10 @@ export const USER_LOCATION_COOKIE = 'userLocation';
 // Matches the backend's default when radiusKm is omitted (listings.service.ts,
 // providers.service.ts) — sent explicitly here so it's visible/adjustable
 // from one place on the frontend rather than relying on the server default.
-export const DEFAULT_NEARBY_RADIUS_KM = 25;
+// Kept small (a real city neighborhood, not the whole metro area) so the
+// "near me" radius circle reads as a local estimate rather than blanketing
+// an entire city the size of Hyderabad.
+export const DEFAULT_NEARBY_RADIUS_KM = 8;
 
 // Pure parser, no browser API dependency — usable from both the client (fed
 // the js-cookie value below) and Server Components (fed `cookies().get(...)`).

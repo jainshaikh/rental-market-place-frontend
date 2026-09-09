@@ -207,11 +207,6 @@ export interface BookingStatusHistory {
   createdAt: string;
 }
 
-// ─── Saved Vehicles ─────────────────────────────────────────────────────────
-
-export interface SavedVehicle {
-  id: string;
-  vehicleId: string;
-  createdAt: string;
-  vehicle: VehicleCard;
-}
+// SavedVehicle lives in lib/api/users.api.ts — its `.vehicle` field reuses
+// ListingVehicleCard (lib/api/listings.api.ts), which would create a circular
+// import if defined here (listings.api.ts already imports enums from this file).

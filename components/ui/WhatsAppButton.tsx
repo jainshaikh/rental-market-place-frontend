@@ -24,7 +24,8 @@ interface WhatsAppButtonProps {
 }
 
 export function WhatsAppButton({ phone, message, variant = 'filled', label, className }: WhatsAppButtonProps) {
-  const digits = phone.replace(/[^\d+]/g, '');
+  // wa.me requires digits only — no leading '+', spaces, or dashes.
+  const digits = phone.replace(/\D/g, '');
   const href = `https://wa.me/${digits}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
   const handleClick = () => trackEvent('contact_provider', { method: 'whatsapp' });
 

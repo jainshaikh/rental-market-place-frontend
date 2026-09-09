@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   CarFront,
   Car,
+  ClipboardCheck,
   Home,
   Inbox,
   LayoutDashboard,
@@ -36,6 +37,12 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon; requiresApprov
   // No business verification needed — identity is verified per-vehicle via uploaded documents
   { href: '/provider/trips', label: 'Trips', icon: Route, requiresApproval: false },
   { href: '/provider/my-vehicles', label: 'My Vehicles', icon: CarFront, requiresApproval: false },
+  {
+    href: '/provider/incoming-requests',
+    label: 'Incoming Requests',
+    icon: ClipboardCheck,
+    requiresApproval: false,
+  },
   {
     href: '/provider/trip-inquiries',
     label: 'Trip Requests',

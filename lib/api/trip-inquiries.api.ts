@@ -1,7 +1,7 @@
 import apiClient from './client';
 import type { ApiResponse, PaginationMeta } from '../../types/api.types';
 
-export type TripInquiryStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED';
+export type TripInquiryStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'EXPIRED';
 
 export interface TripInquiryUser {
   id: string;
@@ -22,7 +22,14 @@ export interface TripInquiryTrip {
   contactNumber: string;
   postedByUserId: string;
   postedBy: { id: string; name: string; email: string; phone: string | null };
-  userVehicle: { make: string; model: string; plateNumber: string };
+  userVehicle: {
+    make: string;
+    model: string;
+    year: number | null;
+    color: string | null;
+    plateNumber: string;
+    images: { url: string; altText: string | null }[];
+  };
 }
 
 export interface TripInquiry {
