@@ -1,5 +1,6 @@
 export { Button, buttonVariants, type ButtonProps } from './Button';
 export { Input, Textarea, Select, type InputProps, type TextareaProps, type SelectProps } from './Input';
+export { DebouncedInput, type DebouncedInputProps } from './DebouncedInput';
 export { Card, type CardProps } from './Card';
 export { UnderlineTabs, SegmentedTabs, type TabOption } from './Tabs';
 export { Modal } from './Modal';

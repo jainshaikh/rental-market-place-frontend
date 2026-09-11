@@ -12,7 +12,7 @@ import {
   type TripMetaCities,
 } from '../../lib/api/trips.api';
 import { cn } from '../../lib/utils/cn';
-import { Button, Card, EmptyState, Input, Pagination, Select } from '../ui';
+import { Button, Card, DebouncedInput, EmptyState, Input, Pagination, Select } from '../ui';
 
 const SORT_OPTS = [
   { value: 'departure_asc', label: 'Soonest departure' },
@@ -64,7 +64,9 @@ export function TripsView({ initialData, cities, lockedOriginCity, lockedDestina
   const matchesInitialFilters = JSON.stringify(filters) === JSON.stringify(initialFilters);
 
   const updateFilter = useCallback(
-    (key: string, value: string | number | undefined) => {
+    // 'replace' is for text fields committed via DebouncedInput — see the
+    // identical note in VehiclesView.tsx's updateFilter.
+    (key: string, value: string | number | undefined, method: 'push' | 'replace' = 'push') => {
       const params = new URLSearchParams(searchParams.toString());
       if (value === undefined || value === '' || value === null) {
         params.delete(key);
@@ -72,7 +74,7 @@ export function TripsView({ initialData, cities, lockedOriginCity, lockedDestina
         params.set(key, String(value));
       }
       if (key !== 'page') params.set('page', '1');
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+      router[method](`${pathname}?${params.toString()}`, { scroll: false });
     },
     [router, pathname, searchParams],
   );
@@ -234,7 +236,7 @@ export function TripsView({ initialData, cities, lockedOriginCity, lockedDestina
 interface FilterPanelProps {
   filters: TripFilters;
   cities: TripMetaCities;
-  onUpdate: (key: string, value: string | number | undefined) => void;
+  onUpdate: (key: string, value: string | number | undefined, method?: 'push' | 'replace') => void;
   hasActiveFilters: boolean;
   onClear: () => void;
   lockedOriginCity?: string;
@@ -319,42 +321,42 @@ function FilterPanel({
       <div>
         <div className={groupLabelCls}>Price per seat</div>
         <div className="flex gap-2">
-          <input
+          <DebouncedInput
             type="number"
             placeholder="Min"
-            value={filters.priceMin ?? ''}
-            onChange={(e) => onUpdate('priceMin', e.target.value ? Number(e.target.value) : undefined)}
-            className="w-1/2 rounded-control border border-border-strong bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-600 focus:ring-[3px] focus:ring-brand-600/18"
+            value={filters.priceMin?.toString() ?? ''}
+            onCommit={(text) => onUpdate('priceMin', text ? Number(text) : undefined, 'replace')}
+            wrapperClassName="w-1/2"
           />
-          <input
+          <DebouncedInput
             type="number"
             placeholder="Max"
-            value={filters.priceMax ?? ''}
-            onChange={(e) => onUpdate('priceMax', e.target.value ? Number(e.target.value) : undefined)}
-            className="w-1/2 rounded-control border border-border-strong bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-600 focus:ring-[3px] focus:ring-brand-600/18"
+            value={filters.priceMax?.toString() ?? ''}
+            onCommit={(text) => onUpdate('priceMax', text ? Number(text) : undefined, 'replace')}
+            wrapperClassName="w-1/2"
           />
         </div>
       </div>
 
-      <Input
+      <DebouncedInput
         label="Vehicle"
         placeholder="Make or model"
         value={filters.vehicleSearch ?? ''}
-        onChange={(e) => onUpdate('vehicleSearch', e.target.value || undefined)}
+        onCommit={(text) => onUpdate('vehicleSearch', text || undefined, 'replace')}
       />
 
-      <Input
+      <DebouncedInput
         label="Pickup point"
         placeholder="Search pickup point"
         value={filters.pickupPoint ?? ''}
-        onChange={(e) => onUpdate('pickupPoint', e.target.value || undefined)}
+        onCommit={(text) => onUpdate('pickupPoint', text || undefined, 'replace')}
       />
 
-      <Input
+      <DebouncedInput
         label="Drop-off point"
         placeholder="Search drop-off point"
         value={filters.dropoffPoint ?? ''}
-        onChange={(e) => onUpdate('dropoffPoint', e.target.value || undefined)}
+        onCommit={(text) => onUpdate('dropoffPoint', text || undefined, 'replace')}
       />
     </Card>
   );

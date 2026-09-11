@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { LocateFixed } from 'lucide-react';
 import { Map, Marker, useMap } from '@vis.gl/react-google-maps';
 import { GoogleMapsProvider } from './GoogleMapsProvider';
 import { PlaceAutocompleteInput, type PlaceLocation } from './PlaceAutocompleteInput';
@@ -83,6 +84,31 @@ export function MapLocationPicker({
     [handleMapInteraction],
   );
 
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState<string | null>(null);
+
+  const handleUseCurrentLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocateError('Location is not available in this browser.');
+      return;
+    }
+    setLocating(true);
+    setLocateError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        handleMapInteraction(position.coords.latitude, position.coords.longitude);
+        setLocating(false);
+      },
+      () => {
+        // Denied or unavailable — leave the picker exactly as it was, the
+        // user can still search or tap the map manually.
+        setLocateError("Couldn't get your location — check your browser's location permission.");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  }, [handleMapInteraction]);
+
   return (
     <GoogleMapsProvider>
       <div className="space-y-2">
@@ -95,7 +121,7 @@ export function MapLocationPicker({
           className={inputClassName}
           regionCodes={['PK', 'AE', 'SA']}
         />
-        <div className="h-56 w-full overflow-hidden rounded-lg border border-slate-300">
+        <div className="relative h-56 w-full overflow-hidden rounded-lg border border-slate-300">
           <Map
             defaultCenter={hasPin ? { lat, lng } : DEFAULT_CENTER}
             defaultZoom={hasPin ? PICKED_ZOOM : DEFAULT_ZOOM}
@@ -109,11 +135,21 @@ export function MapLocationPicker({
             <FlyToPin lat={lat} lng={lng} />
             {hasPin && <Marker position={{ lat, lng }} draggable onDragEnd={handleMarkerDragEnd} />}
           </Map>
+          <button
+            type="button"
+            onClick={handleUseCurrentLocation}
+            disabled={locating}
+            className="absolute right-2.5 top-2.5 z-10 flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-60"
+          >
+            <LocateFixed className="h-3.5 w-3.5" />
+            {locating ? 'Locating…' : 'Current location'}
+          </button>
         </div>
+        {locateError && <p className="text-xs text-red-600">{locateError}</p>}
         <p className="text-xs text-slate-500">
           {hasPin
             ? 'Drag the pin or click the map to fine-tune the exact spot.'
-            : 'Search your address above, or click the map to drop a pin.'}
+            : 'Search your address above, click the map to drop a pin, or use your current location.'}
         </p>
       </div>
     </GoogleMapsProvider>

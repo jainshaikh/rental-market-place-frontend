@@ -11,7 +11,7 @@ import {
   type ListingsResponse,
 } from '../../lib/api/listings.api';
 import { cn } from '../../lib/utils/cn';
-import { Button, Card, EmptyState, Input, Pagination, PillToggle, Select } from '../ui';
+import { Button, Card, DebouncedInput, EmptyState, Pagination, PillToggle, Select } from '../ui';
 import { LocationSearch } from '../maps/LocationSearch';
 import { ResultsMap } from '../maps/ResultsMap';
 import { DEFAULT_NEARBY_RADIUS_KM, clearUserLocation, type UserLocation } from '../../lib/utils/userLocation';
@@ -85,7 +85,12 @@ export function VehiclesView({ initialData, makes, cities, initialLocation }: Ve
     : filters;
 
   const updateFilter = useCallback(
-    (key: string, value: string | number | undefined) => {
+    // 'replace' is for text fields committed via DebouncedInput — those land
+    // one settled value at a time already, but still shouldn't each add a
+    // separate back-button stop; 'push' (the default) stays for discrete
+    // choices like selects/toggles, where a history entry per change is
+    // actually useful.
+    (key: string, value: string | number | undefined, method: 'push' | 'replace' = 'push') => {
       const params = new URLSearchParams(searchParams.toString());
       if (value === undefined || value === '' || value === null) {
         params.delete(key);
@@ -94,7 +99,7 @@ export function VehiclesView({ initialData, makes, cities, initialLocation }: Ve
       }
       // Reset to page 1 when filter changes (unless it's a page change)
       if (key !== 'page') params.set('page', '1');
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+      router[method](`${pathname}?${params.toString()}`, { scroll: false });
     },
     [router, pathname, searchParams],
   );
@@ -331,7 +336,7 @@ interface FilterPanelProps {
   filters: ListingFilters;
   makes: string[];
   cities: string[];
-  onUpdate: (key: string, value: string | number | undefined) => void;
+  onUpdate: (key: string, value: string | number | undefined, method?: 'push' | 'replace') => void;
   onCityChange: (value: string | undefined) => void;
   hasActiveFilters: boolean;
   onClear: () => void;
@@ -367,11 +372,11 @@ function FilterPanel({
         )}
       </div>
 
-      <Input
+      <DebouncedInput
         label="Search"
         placeholder="Make, model, or keyword"
         value={filters.search ?? ''}
-        onChange={(e) => onUpdate('search', e.target.value || undefined)}
+        onCommit={(text) => onUpdate('search', text || undefined, 'replace')}
       />
 
       <Select label="Make" value={filters.make ?? ''} onChange={(e) => onUpdate('make', e.target.value || undefined)}>
@@ -411,19 +416,19 @@ function FilterPanel({
         {/* No single currency applies here — results can span multiple markets; each result card shows its own. */}
         <div className={groupLabelCls}>Price per day</div>
         <div className="flex gap-2">
-          <input
+          <DebouncedInput
             type="number"
             placeholder="Min"
-            value={filters.priceMin ?? ''}
-            onChange={(e) => onUpdate('priceMin', e.target.value ? Number(e.target.value) : undefined)}
-            className="w-1/2 rounded-control border border-border-strong bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-600 focus:ring-[3px] focus:ring-brand-600/18"
+            value={filters.priceMin?.toString() ?? ''}
+            onCommit={(text) => onUpdate('priceMin', text ? Number(text) : undefined, 'replace')}
+            wrapperClassName="w-1/2"
           />
-          <input
+          <DebouncedInput
             type="number"
             placeholder="Max"
-            value={filters.priceMax ?? ''}
-            onChange={(e) => onUpdate('priceMax', e.target.value ? Number(e.target.value) : undefined)}
-            className="w-1/2 rounded-control border border-border-strong bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-600 focus:ring-[3px] focus:ring-brand-600/18"
+            value={filters.priceMax?.toString() ?? ''}
+            onCommit={(text) => onUpdate('priceMax', text ? Number(text) : undefined, 'replace')}
+            wrapperClassName="w-1/2"
           />
         </div>
       </div>

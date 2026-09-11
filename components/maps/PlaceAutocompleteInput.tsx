@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useMapsLibrary } from '@vis.gl/react-google-maps';
 import { cn } from '../../lib/utils/cn';
+import { setActiveAutocomplete, subscribeActiveAutocomplete } from './activeAutocomplete';
 
 export interface PlaceLocation {
   description: string;
@@ -44,6 +45,8 @@ export function PlaceAutocompleteInput({
   const [open, setOpen] = useState(false);
   const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const instanceId = useId();
 
   useEffect(() => {
     if (placesLib && !sessionTokenRef.current) {
@@ -53,12 +56,47 @@ export function PlaceAutocompleteInput({
 
   useEffect(() => () => clearTimeout(debounceRef.current), []);
 
-  const fetchSuggestions = (text: string) => {
+  // Only one PlaceAutocompleteInput's dropdown may be open at a time — when a
+  // different instance activates (another field gains focus, or a page-level
+  // "near me" box opens its own list), close this one immediately.
+  useEffect(() => subscribeActiveAutocomplete((activeId) => {
+    if (activeId !== instanceId) setOpen(false);
+  }), [instanceId]);
+
+  // Closes on any click/tap outside this field's input+dropdown — the map,
+  // another field's container, buttons, blank page background, anything.
+  // Distinct from the active-instance subscription above: that one handles
+  // "another autocomplete took focus", this one handles "the user clicked
+  // away from autocompletes entirely".
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, []);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // openOnResult=false is for the mount/library-load bootstrap below — a
+  // field can already hold a value on mount (e.g. LocationSearch prefilling
+  // the last-picked "near me" area from a cookie on every page it appears
+  // on), and that is not the user typing, so it must never pop the dropdown
+  // open on its own. Only an actual keystroke (handleInputChange) opens it.
+  const fetchSuggestions = (text: string, openOnResult = true) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!placesLib || !text.trim()) {
       setSuggestions([]);
-      setOpen(false);
+      if (openOnResult) setOpen(false);
       return;
     }
 
@@ -70,20 +108,24 @@ export function PlaceAutocompleteInput({
           includedRegionCodes: regionCodes,
         });
         setSuggestions(results);
-        setOpen(results.length > 0);
+        if (openOnResult) {
+          setOpen(results.length > 0);
+          if (results.length > 0) setActiveAutocomplete(instanceId);
+        }
       } catch {
         setSuggestions([]);
-        setOpen(false);
+        if (openOnResult) setOpen(false);
       }
     }, DEBOUNCE_MS);
   };
 
   // The Maps JS script loads lazily on first mount, so `placesLib` is often
-  // still null for the first keystroke or two — without this, that initial
-  // input would silently produce no suggestions and never retry once the
-  // library finishes loading a moment later.
+  // still null for the first keystroke or two. This keeps a pre-filled value
+  // "primed" (suggestions ready the moment the field is focused) once the
+  // library catches up, without forcing the dropdown open on its own — see
+  // the openOnResult note above.
   useEffect(() => {
-    if (placesLib && value.trim()) fetchSuggestions(value);
+    if (placesLib && value.trim()) fetchSuggestions(value, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [placesLib]);
 
@@ -96,6 +138,7 @@ export function PlaceAutocompleteInput({
     const prediction = suggestion.placePrediction;
     if (!prediction || !placesLib) return;
     setOpen(false);
+    setActiveAutocomplete(null);
 
     const place = prediction.toPlace();
     await place.fetchFields({ fields: ['location', 'formattedAddress'] });
@@ -116,14 +159,20 @@ export function PlaceAutocompleteInput({
   };
 
   return (
-    <div className="relative min-w-0 flex-1">
+    <div ref={containerRef} className="relative min-w-0 flex-1">
       <input
         id={id}
         type="text"
         value={value}
         onChange={(e) => handleInputChange(e.target.value)}
-        onFocus={() => suggestions.length > 0 && setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onFocus={() => {
+          // Claiming "active" on focus alone (not just once suggestions
+          // arrive) is what makes clicking straight from Pickup into
+          // Drop-off close Pickup's list immediately, even before Drop-off
+          // has typed anything of its own yet.
+          setActiveAutocomplete(instanceId);
+          if (suggestions.length > 0) setOpen(true);
+        }}
         placeholder={placeholder}
         autoComplete="off"
         className={className}
